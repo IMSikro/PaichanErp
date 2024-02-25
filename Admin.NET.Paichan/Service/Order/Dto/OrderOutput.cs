@@ -41,7 +41,7 @@ public class OrderOutput
     public long ProduceId { get; set; } 
     
     /// <summary>
-    /// 产品选择 描述
+    /// 产品编号
     /// </summary>
     public string ProduceIdProduceName { get; set; } 
     
@@ -49,7 +49,12 @@ public class OrderOutput
     /// 产品名称
     /// </summary>
     public string ProduceName { get; set; }
-    
+
+    /// <summary>
+    /// 产品RGB颜色
+    /// </summary>
+    public string? ColorRgb { get; set; }
+
     /// <summary>
     /// 批次号
     /// </summary>
@@ -89,7 +94,6 @@ public class OrderOutput
     /// 订单排产列表
     /// </summary>
     public List<OrderDetailOutput> OrderDetails { get; set; }
-    
-    }
+}
  
 

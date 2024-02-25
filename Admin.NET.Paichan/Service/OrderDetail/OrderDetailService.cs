@@ -62,8 +62,58 @@ public class OrderDetailService : IDynamicApiController, ITransient
 
         await _rep.AsSugarClient().ThenMapperAsync(orderDetails.Items, async o =>
         {
-            o.OperatorUsersRealName = string.Join(",", _rep.Context.Queryable<SysUser>().Where(u => !u.IsDelete)
-                .Select(u => u.RealName));
+            o.OperatorUsersRealName = string.Join(",", await _rep.Context.Queryable<SysUser>().Where(u => !u.IsDelete && o.OperatorUsers.Contains(u.Id.ToString()))
+                .Select(u => u.RealName).ToListAsync());
+        });
+        return orderDetails;
+    }
+
+    /// <summary>
+    /// 查询设备所有排产
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public async Task<List<OrderDetailOutput>> ListOrderDetailByDeviceId(OrderDetailDeviceInput input)
+    {
+        var query = _rep.AsQueryable()
+                .Where(u => !u.IsDelete && u.StartDate != null && u.EndDate == null)
+            .WhereIF(input.DeviceId > 0, u => u.DeviceId == input.DeviceId)
+            //处理外键和TreeSelector相关字段的连接
+            .LeftJoin<Order>((u, orderid) => u.OrderId == orderid.Id)
+            .LeftJoin<Device>((u, orderid, deviceid) => u.DeviceId == deviceid.Id)
+            .LeftJoin<Produce>((u, orderid, deviceid,produceid) => orderid.ProduceId == produceid.Id)
+                .Select((u, orderid, deviceid, produceid) => new OrderDetailOutput
+            {
+                Id = u.Id,
+                OrderId = u.OrderId,
+                OrderIdBatchNumber = orderid.BatchNumber,
+                OrderDetailCode = u.OrderDetailCode,
+                StartDate = u.StartDate,
+                EndDate = u.EndDate,
+                DeviceId = u.DeviceId,
+                DeviceIdDeviceCode = deviceid.DeviceCode,
+                OperatorUsers = u.OperatorUsers,
+                OperatorUsersRealName = "",
+                Qty = u.Qty,
+                pUnit = u.pUnit,
+                ProduceId = orderid.ProduceId,
+                ProduceIdProduceName = produceid.ProduceCode,
+                ProduceName = orderid.ProduceName,
+                ColorRgb = produceid.ColorRgb,
+                Sort = u.Sort,
+                Remark = u.Remark,
+                CreateUserName = u.CreateUserName,
+                UpdateUserName = u.UpdateUserName,
+            })
+;
+        query = query.OrderBuilder(input, "", "Sort", false);
+        var orderDetails = await query.ToListAsync();
+
+        await _rep.AsSugarClient().ThenMapperAsync(orderDetails, async o =>
+        {
+            o.OperatorUsersRealName = string.Join(",", await _rep.Context.Queryable<SysUser>().Where(u => !u.IsDelete && o.OperatorUsers.Contains(u.Id.ToString()))
+                .Select(u => u.RealName).ToListAsync());
         });
         return orderDetails;
     }

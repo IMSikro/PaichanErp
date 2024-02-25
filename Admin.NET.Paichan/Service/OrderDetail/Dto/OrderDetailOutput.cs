@@ -64,7 +64,26 @@ public class OrderDetailOutput
     /// 计量单位
     /// </summary>
     public string? pUnit { get; set; }
-    
+
+    /// <summary>
+    /// 产品选择
+    /// </summary>
+    public long ProduceId { get; set; }
+    /// <summary>
+    /// 产品编号
+    /// </summary>
+    public string ProduceIdProduceName { get; set; }
+
+    /// <summary>
+    /// 产品名称
+    /// </summary>
+    public string ProduceName { get; set; }
+
+    /// <summary>
+    /// 产品RGB颜色
+    /// </summary>
+    public string? ColorRgb { get; set; }
+
     /// <summary>
     /// 排序
     /// </summary>

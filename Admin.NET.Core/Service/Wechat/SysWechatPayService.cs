@@ -7,6 +7,8 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
+using Microsoft.AspNetCore.Identity;
+
 namespace Admin.NET.Core.Service;
 
 /// <summary>
@@ -15,6 +17,7 @@ namespace Admin.NET.Core.Service;
 [ApiDescriptionSettings(Order = 210)]
 public class SysWechatPayService : IDynamicApiController, ITransient
 {
+    private readonly UserManager _userManager;
     private readonly SqlSugarRepository<SysWechatPay> _sysWechatPayUserRep;
 
     private readonly WechatPayOptions _wechatPayOptions;
@@ -22,10 +25,11 @@ public class SysWechatPayService : IDynamicApiController, ITransient
 
     private readonly WechatTenpayClient _wechatTenpayClient;
 
-    public SysWechatPayService(SqlSugarRepository<SysWechatPay> sysWechatPayUserRep,
+    public SysWechatPayService(UserManager userManager, SqlSugarRepository<SysWechatPay> sysWechatPayUserRep,
         IOptions<WechatPayOptions> wechatPayOptions,
         IOptions<PayCallBackOptions> payCallBackOptions)
     {
+        _userManager = userManager;
         _sysWechatPayUserRep = sysWechatPayUserRep;
         _wechatPayOptions = wechatPayOptions.Value;
         _payCallBackOptions = payCallBackOptions.Value;
@@ -165,6 +169,36 @@ public class SysWechatPayService : IDynamicApiController, ITransient
     public async Task<SysWechatPay> GetPayInfo(string tradeId)
     {
         return await _sysWechatPayUserRep.GetFirstAsync(u => u.OutTradeNumber == tradeId);
+    }
+
+    /// <summary>
+    /// 获取支付订单列表
+    /// </summary>
+    /// <returns></returns>
+    [DisplayName("获取支付订单列表")]
+    [HttpPost]
+    public async Task<SqlSugarPagedList<SysWechatPay>> PayInfoList(BasePageInput input)
+    {
+        return await _sysWechatPayUserRep.AsQueryable().Where(u => u.SysWechatUser.UserId == _userManager.UserId).ToPagedListAsync(input.Page, input.PageSize);
+    }
+
+    /// <summary>
+    /// 默认支付调用
+    /// </summary>
+    /// <returns></returns>
+    [DisplayName("11111默认支付调用")]
+    [HttpPost]
+    public async Task<SqlSugarPagedList<SysWechatPay>> PayForDefault()
+    {
+        var payInfo = new WechatPayTransactionInput
+        {
+            OpenId = null,
+            Total = 200,
+            Description = "云制库企业管理续费 - 1年",
+            Attachment = "1y",
+            GoodsTag = null
+        };
+        return await CreatePayTransaction(payInfo);
     }
 
     /// <summary>

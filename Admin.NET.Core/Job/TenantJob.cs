@@ -12,8 +12,9 @@ namespace Admin.NET.Core;
 /// <summary>
 /// 清理日志作业任务
 /// </summary>
-[JobDetail("job_tenant", Description = "到期租户自动禁用", GroupName = "default", Concurrent = false)]
-[Daily(TriggerId = "trigger_tenant", Description = "到期租户自动禁用")]
+[JobDetail("job_tenant", Description = "自动禁用到期租户", GroupName = "default", Concurrent = false)]
+[Cron("0 0 * * ?", TriggerId = "trigger_tenant", Description = "每天零点自动禁用到期租户")]
+//[Daily(TriggerId = "trigger_tenant", Description = "自动禁用到期租户")]
 public class TenantJob : IJob
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -34,7 +35,8 @@ public class TenantJob : IJob
         foreach (var tenant in tenantList)
         {
             if (tenant == null || tenant.ConfigId == SqlSugarConst.MainConfigId)
-                throw Oops.Oh(ErrorCodeEnum.Z1001);
+                //throw Oops.Oh(ErrorCodeEnum.Z1001);
+                continue;
 
             if (tenant.Expiration <= DateTime.Now)
             {

@@ -56,6 +56,7 @@ public class OrderService : IDynamicApiController, ITransient
                 ProduceId = u.ProduceId,
                 ProduceIdProduceName = produceid.ProduceCode,
                 ProduceName = u.ProduceName,
+                ColorRgb = produceid.ColorRgb,
                 BatchNumber = u.BatchNumber,
                 Quantity = u.Quantity,
                 pUnit = u.pUnit,

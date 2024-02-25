@@ -101,6 +101,19 @@ public class SysTenantService : IDynamicApiController, ITransient
     }
 
     /// <summary>
+    /// 获取租户信息
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost]
+    [DisplayName("获取租户信息")]
+    public async Task<SysTenant> GetTenantById(TenantIdInput input)
+    {
+        if (input.TenantId > 0)
+            return await _sysTenantRep.GetFirstAsync(u => u.Id == input.TenantId && u.Status == StatusEnum.Enable);
+        return null;
+    }
+
+    /// <summary>
     /// 增加租户
     /// </summary>
     /// <param name="input"></param>
