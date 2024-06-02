@@ -101,7 +101,7 @@ public class SysOrgService : IDynamicApiController, ITransient
         if (!_userManager.SuperAdmin && input.Pid == 0)
             throw Oops.Oh(ErrorCodeEnum.D2009);
 
-        if (await _sysOrgRep.IsAnyAsync(u => u.Name == input.Name && u.Code == input.Code))
+        if (await _sysOrgRep.IsAnyAsync(u => u.Name == input.Name && u.Code == input.Code && u.TenantId == _userManager.TenantId))
             throw Oops.Oh(ErrorCodeEnum.D2002);
 
         if (!_userManager.SuperAdmin && input.Pid != 0)
@@ -151,7 +151,9 @@ public class SysOrgService : IDynamicApiController, ITransient
         if (input.Id == input.Pid)
             throw Oops.Oh(ErrorCodeEnum.D2001);
 
-        if (await _sysOrgRep.IsAnyAsync(u => u.Name == input.Name && u.Code == input.Code && u.Id != input.Id))
+        var org = await _sysOrgRep.AsQueryable().FirstAsync(u => u.Id == input.Id);
+
+        if (await _sysOrgRep.IsAnyAsync(u => u.Name == input.Name && u.Code == input.Code && u.Id != input.Id && u.TenantId == org.TenantId))
             throw Oops.Oh(ErrorCodeEnum.D2002);
 
         // 父Id不能为自己的子节点

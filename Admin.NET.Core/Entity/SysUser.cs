@@ -14,6 +14,7 @@ namespace Admin.NET.Core;
 /// </summary>
 [SugarTable(null, "系统用户表")]
 [SysTable]
+[IncreTable]
 public class SysUser : EntityTenant
 {
     /// <summary>
@@ -166,6 +167,19 @@ public class SysUser : EntityTenant
     [SugarColumn(ColumnDescription = "个人简介", Length = 512)]
     [MaxLength(512)]
     public string? Introduction { get; set; }
+
+    /// <summary>
+    /// 工时单价
+    /// </summary>
+    [SugarColumn(ColumnDescription = "工时单价")]
+    public double? UnitPrice { get; set; }
+
+    /// <summary>
+    /// 个人技能
+    /// </summary>
+    [SugarColumn(ColumnDescription = "个人技能", Length = 512)]
+    [MaxLength(512)]
+    public string? PersonalSkill { get; set; }
 
     /// <summary>
     /// 排序

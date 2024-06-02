@@ -14,7 +14,12 @@ public class ProduceTypeOutput
     /// 设备类型
     /// </summary>
     public string? TypeName { get; set; }
-    
+
+    /// <summary>
+    /// 产品系列
+    /// </summary>
+    public virtual string? ProduceSeries { get; set; }
+
     /// <summary>
     /// 备注
     /// </summary>

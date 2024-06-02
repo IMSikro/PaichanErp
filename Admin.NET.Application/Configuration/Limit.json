@@ -33,25 +33,25 @@
       {
         "Endpoint": "*",
         "Period": "1s",
-        "Limit": 10
+        "Limit": 1000
       },
       // 1分钟只能调用600次
       {
         "Endpoint": "*",
         "Period": "1m",
-        "Limit": 600
+        "Limit": 60000
       },
       // 1小时只能调用3600
       {
         "Endpoint": "*",
         "Period": "1h",
-        "Limit": 3600
+        "Limit": 360000
       },
       // 1天只能调用86400次
       {
         "Endpoint": "*",
         "Period": "1d",
-        "Limit": 86400
+        "Limit": 8640000
       }
     ]
   },
@@ -63,12 +63,12 @@
           {
             "Endpoint": "*",
             "Period": "1s",
-            "Limit": 10
+            "Limit": 1000
           },
           {
             "Endpoint": "*",
             "Period": "1m",
-            "Limit": 600
+            "Limit": 60000
           }
         ]
       }
@@ -90,12 +90,12 @@
       {
         "Endpoint": "*",
         "Period": "1s",
-        "Limit": 10
+        "Limit": 1000
       },
       {
         "Endpoint": "*",
         "Period": "1m",
-        "Limit": 600
+        "Limit": 60000
       }
     ]
   },
@@ -107,12 +107,12 @@
           {
             "Endpoint": "*",
             "Period": "1s",
-            "Limit": 10
+            "Limit": 1000
           },
           {
             "Endpoint": "*",
             "Period": "1m",
-            "Limit": 600
+            "Limit": 60000
           }
         ]
       }

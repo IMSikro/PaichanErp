@@ -7,6 +7,8 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
+using Microsoft.AspNetCore.Identity;
+
 namespace Admin.NET.Core.Service;
 
 /// <summary>
@@ -15,15 +17,17 @@ namespace Admin.NET.Core.Service;
 [ApiDescriptionSettings(Order = 230)]
 public class SysWechatService : IDynamicApiController, ITransient
 {
+    private readonly UserManager _userManager;
     private readonly SqlSugarRepository<SysWechatUser> _sysWechatUserRep;
     private readonly SysConfigService _sysConfigService;
     private readonly WechatApiHttpClientFactory _wechatApiHttpClientFactory;
     private readonly WechatApiClient _wechatApiClient;
 
-    public SysWechatService(SqlSugarRepository<SysWechatUser> sysWechatUserRep,
+    public SysWechatService(UserManager userManager, SqlSugarRepository<SysWechatUser> sysWechatUserRep,
         SysConfigService sysConfigService,
         WechatApiHttpClientFactory wechatApiHttpClientFactory)
     {
+        _userManager = userManager;
         _sysWechatUserRep = sysWechatUserRep;
         _sysConfigService = sysConfigService;
         _wechatApiHttpClientFactory = wechatApiHttpClientFactory;
@@ -46,7 +50,6 @@ public class SysWechatService : IDynamicApiController, ITransient
     /// 获取微信用户OpenId
     /// </summary>
     /// <param name="input"></param>
-    [AllowAnonymous]
     [DisplayName("获取微信用户OpenId")]
     public async Task<string> SnsOAuth2([FromQuery] WechatOAuth2Input input)
     {
@@ -59,27 +62,37 @@ public class SysWechatService : IDynamicApiController, ITransient
             throw Oops.Oh(resOAuth2.ErrorMessage + " " + resOAuth2.ErrorCode);
 
         var wxUser = await _sysWechatUserRep.GetFirstAsync(p => p.OpenId == resOAuth2.OpenId);
+        var reqUserInfo = new SnsUserInfoRequest()
+        {
+            OpenId = resOAuth2.OpenId,
+            AccessToken = resOAuth2.AccessToken,
+        };
+        var resUserInfo = await _wechatApiClient.ExecuteSnsUserInfoAsync(reqUserInfo);
         if (wxUser == null)
         {
-            var reqUserInfo = new SnsUserInfoRequest()
-            {
-                OpenId = resOAuth2.OpenId,
-                AccessToken = resOAuth2.AccessToken,
-            };
-            var resUserInfo = await _wechatApiClient.ExecuteSnsUserInfoAsync(reqUserInfo);
             wxUser = resUserInfo.Adapt<SysWechatUser>();
             wxUser.Avatar = resUserInfo.HeadImageUrl;
             wxUser.NickName = resUserInfo.Nickname;
-            wxUser = await _sysWechatUserRep.AsInsertable(wxUser).ExecuteReturnEntityAsync();
+            wxUser.UserId = _userManager.UserId;
+            await _sysWechatUserRep.AsInsertable(wxUser).ExecuteReturnEntityAsync();
         }
         else
         {
             wxUser.AccessToken = resOAuth2.AccessToken;
             wxUser.RefreshToken = resOAuth2.RefreshToken;
-            await _sysWechatUserRep.AsUpdateable(wxUser).IgnoreColumns(true).ExecuteCommandAsync();
+            wxUser.Avatar = resUserInfo.HeadImageUrl;
+            wxUser.NickName = resUserInfo.Nickname;
+            wxUser.UserId = _userManager.UserId;
+            await _sysWechatUserRep.AsUpdateable(wxUser)
+                .IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
         }
 
-        return resOAuth2.OpenId;
+        var data = new
+        {
+            _userManager.UserId,
+            resOAuth2.OpenId,
+        };
+        return JsonConvert.SerializeObject(data);
     }
 
     /// <summary>

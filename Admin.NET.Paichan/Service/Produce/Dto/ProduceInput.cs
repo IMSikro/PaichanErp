@@ -32,22 +32,7 @@ namespace Admin.NET.Paichan;
         /// 产品RGB颜色
         /// </summary>
         public virtual string ColorRgb { get; set; }
-        
-        /// <summary>
-        /// 是否搅拌
-        /// </summary>
-        public virtual bool IsMix { get; set; }
-        
-        /// <summary>
-        /// 是否挤出
-        /// </summary>
-        public virtual bool IsExtrusion { get; set; }
-        
-        /// <summary>
-        /// 是否搅拌
-        /// </summary>
-        public virtual bool IsMill { get; set; }
-        
+
         /// <summary>
         /// 产品系数
         /// </summary>
@@ -58,6 +43,21 @@ namespace Admin.NET.Paichan;
         /// </summary>
         public virtual string? ProduceSeries { get; set; }
         
+        /// <summary>
+        /// 计量单位
+        /// </summary>
+        public virtual string? pUnit { get; set; }
+        
+        /// <summary>
+        /// 计量单位
+        /// </summary>
+        public virtual long? UnitId { get; set; }
+
+        /// <summary>
+        /// 设备类型(工艺)
+        /// </summary>
+        public string? DeviceTypes { get; set; }
+
         /// <summary>
         /// 备注
         /// </summary>

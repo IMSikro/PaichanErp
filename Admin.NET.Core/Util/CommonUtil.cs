@@ -135,4 +135,68 @@ public static class CommonUtil
 
         return res.Data;
     }
+
+    public static string LabToRgb(this string lab)
+    {
+        var labSplit = lab.Split([',', '/', '*']);
+        var L = Convert.ToDouble(labSplit[0].Trim());
+        var A = Convert.ToDouble(labSplit[1].Trim());
+        var B = Convert.ToDouble(labSplit[2].Trim());
+
+        var y = (L * 1 + 16) / 116D;
+        var x = A / 500D + y;
+        var Z = y - B / 200D;
+
+        var modelValue = 0.008856;
+        if (Math.Pow(y, 3) > modelValue)
+            y = Math.Pow(y, 3);
+        else
+            y = (y - 16 / 116D) / 7.787;
+
+        if (Math.Pow(x, 3) > modelValue)
+            x = Math.Pow(x, 3);
+        else
+            x = (x - 16 / 116D) / 7.787;
+
+        if (Math.Pow(Z, 3) > modelValue)
+            Z = Math.Pow(Z, 3);
+        else
+            Z = (Z - 16 / 116D) / 7.787;
+
+        x = x * 0.95047;
+        y = y * 1.0;
+        Z = Z * 1.08883;
+
+        var r = x * 3.2406 + y * -1.5372 + Z * -0.4986;
+        var g = x * -0.9689 + y * 1.8758 + Z * 0.0415;
+        var b = x * 0.0557 + y * -0.204 + Z * 1.057;
+
+        if (r > 0.0031308)
+            r = 1.055 * Math.Pow(r, (1 / 2.4)) - 0.055;
+        else
+            r = 12.92 * r;
+
+        if (g > 0.0031308)
+            g = 1.055 * Math.Pow(g, (1 / 2.4)) - 0.055;
+        else
+            g = 12.92 * g;
+
+        if (b > 0.0031308)
+            b = 1.055 * Math.Pow(b, (1 / 2.4)) - 0.055;
+        else
+            b = 12.92 * b;
+
+        r = Math.Round(r * 255);
+        g = Math.Round(g * 255);
+        b = Math.Round(b * 255);
+
+        if (r < 0) r = 0;
+        if (r > 255) r = 255;
+        if (g < 0) g = 0;
+        if (g > 255) g = 255;
+        if (b < 0) b = 0;
+        if (b > 255) b = 255;
+
+        return string.Join(',', new[] { r, g, b });
+    }
 }

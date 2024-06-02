@@ -66,6 +66,11 @@ public class OrderOutput
     public double Quantity { get; set; }
     
     /// <summary>
+    /// 订单余量
+    /// </summary>
+    public double? OrderSurplusQuantity { get; set; }
+    
+    /// <summary>
     /// 计量单位
     /// </summary>
     public string pUnit { get; set; }

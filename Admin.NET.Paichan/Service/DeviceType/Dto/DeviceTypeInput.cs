@@ -12,6 +12,11 @@ namespace Admin.NET.Paichan;
         /// 设备类型
         /// </summary>
         public virtual string TypeName { get; set; }
+
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public int? Sort { get; set; }
         
         /// <summary>
         /// 备注
@@ -44,6 +49,11 @@ namespace Admin.NET.Paichan;
         /// 设备类型
         /// </summary>
         public string? TypeName { get; set; }
+
+        /// <summary>
+        /// 分组Id
+        /// </summary>
+        public long? GroupId { get; set; }
         
     }
 

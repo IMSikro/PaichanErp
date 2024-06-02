@@ -7,14 +7,21 @@ namespace Admin.NET.Paichan.Entity;
 /// 产品类型
 /// </summary>
 [SugarTable("PC_ProduceType","产品类型")]
+[IncreTable]
 public class ProduceType  : EntityTenant
 {
     /// <summary>
-    /// 设备类型
+    /// 产品类型
     /// </summary>
-    [SugarColumn(ColumnName = "TypeName", ColumnDescription = "设备类型", Length = 50)]
+    [SugarColumn(ColumnName = "TypeName", ColumnDescription = "产品类型", Length = 50)]
     public string? TypeName { get; set; }
-    
+
+    /// <summary>
+    /// 产品系列
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceSeries", ColumnDescription = "产品系列", Length = 255)]
+    public string? ProduceSeries { get; set; }
+
     /// <summary>
     /// 备注
     /// </summary>

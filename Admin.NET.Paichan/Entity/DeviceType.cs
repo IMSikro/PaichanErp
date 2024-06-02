@@ -8,6 +8,7 @@ namespace Admin.NET.Paichan.Entity;
 /// 设备类型
 /// </summary>
 [SugarTable("PC_DeviceType","设备类型")]
+[IncreTable]
 public class DeviceType  : EntityTenant
 {
     /// <summary>
@@ -16,7 +17,13 @@ public class DeviceType  : EntityTenant
     [Required]
     [SugarColumn(ColumnName = "TypeName", ColumnDescription = "设备类型", Length = 50)]
     public string TypeName { get; set; }
-    
+
+    /// <summary>
+    /// 排序
+    /// </summary>
+    [SugarColumn(ColumnName = "Sort", ColumnDescription = "排序")]
+    public int? Sort { get; set; }
+
     /// <summary>
     /// 备注
     /// </summary>

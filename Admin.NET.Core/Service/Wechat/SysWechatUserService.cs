@@ -15,10 +15,12 @@ namespace Admin.NET.Core.Service;
 [ApiDescriptionSettings(Order = 220)]
 public class SysWechatUserService : IDynamicApiController, ITransient
 {
+    private readonly UserManager _userManager;
     private readonly SqlSugarRepository<SysWechatUser> _sysWechatUserRep;
 
-    public SysWechatUserService(SqlSugarRepository<SysWechatUser> sysWechatUserRep)
+    public SysWechatUserService(UserManager userManager, SqlSugarRepository<SysWechatUser> sysWechatUserRep)
     {
+        _userManager = userManager;
         _sysWechatUserRep = sysWechatUserRep;
     }
 
@@ -47,6 +49,17 @@ public class SysWechatUserService : IDynamicApiController, ITransient
     public async Task AddWechatUser(SysWechatUser input)
     {
         await _sysWechatUserRep.InsertAsync(input.Adapt<SysWechatUser>());
+    }
+
+    /// <summary>
+    /// 获取我绑定的微信用户列表
+    /// </summary>
+    /// <returns></returns>
+    [ApiDescriptionSettings(Name = "OwnerWechatUser"), HttpGet]
+    [DisplayName("获取我绑定的微信用户列表")]
+    public async Task<List<SysWechatUser>> OwnerWechatUser()
+    {
+        return await _sysWechatUserRep.AsQueryable().Where(u => !u.IsDelete && u.UserId == _userManager.UserId).ToListAsync();
     }
 
     /// <summary>

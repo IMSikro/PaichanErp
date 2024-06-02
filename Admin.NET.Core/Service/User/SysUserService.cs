@@ -115,6 +115,55 @@ public class SysUserService : IDynamicApiController, ITransient
     }
 
     /// <summary>
+    /// 获取用户导入模板
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+    [ApiDescriptionSettings(Name = "GetUserTempExcel")]
+    public async Task<IActionResult> GetUserTempExcel()
+    {
+        var fileName = "用户列表导入模板.xlsx";
+        var filePath = Path.Combine(App.WebHostEnvironment.WebRootPath, "Excel", "Temp");
+        if (!Directory.Exists(filePath)) Directory.CreateDirectory(filePath);
+        IImporter importer = new ExcelImporter();
+        var res = await importer.GenerateTemplate<UserDto>(Path.Combine(filePath, fileName));
+        return new FileStreamResult(new FileStream(res.FileName, FileMode.OpenOrCreate), "application/octet-stream") { FileDownloadName = fileName };
+    }
+
+    /// <summary>
+    /// 上传Excel导入用户
+    /// </summary>
+    /// <returns></returns>
+    [ApiDescriptionSettings(Name = "ImportUserExcel")]
+    public async Task ImportUserExcel([Required] IFormFile file)
+    {
+        var newFile = await App.GetRequiredService<SysFileService>().UploadFile(file, "Excel/Import");
+        var filePath = Path.Combine(App.WebHostEnvironment.WebRootPath, newFile.FilePath, newFile.Name);
+        IImporter importer = new ExcelImporter();
+        var res = await importer.Import<UserDto>(filePath);
+
+        var users = res.Data;
+        var random = new Random();
+        foreach (var userDto in users)
+        {
+            var user = userDto.Adapt<SysUser>();
+            var password = random.Next(100000,999999).ToString();
+            user.Password = CryptogramUtil.Encrypt(password);
+            if (!string.IsNullOrWhiteSpace(userDto.OrgName))
+                user.OrgId = (await _sysUserRep.Context.Queryable<SysOrg>().FirstAsync(o => o.Name == userDto.OrgName))?.Id ?? 0;
+
+            if (!string.IsNullOrWhiteSpace(userDto.PosName))
+                user.PosId = (await _sysUserRep.Context.Queryable<SysPos>().FirstAsync(o => o.Name == userDto.OrgName))?.Id ?? 0;
+
+            var newUser = await _sysUserRep.AsInsertable(user).ExecuteReturnEntityAsync();
+
+            await UpdateRoleAndExtOrg(new AddUserInput { Id = newUser.Id, RoleIdList = new List<long>{ 1300000000104 } });
+        }
+
+        await App.GetRequiredService<SysFileService>().DeleteFile(new DeleteFileInput { Id = newFile.Id });
+    }
+
+    /// <summary>
     /// 更新角色和扩展机构
     /// </summary>
     /// <param name="input"></param>

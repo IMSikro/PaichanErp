@@ -41,21 +41,6 @@ public class ProduceOutput
     public string ColorRgb { get; set; }
     
     /// <summary>
-    /// 是否搅拌
-    /// </summary>
-    public bool IsMix { get; set; }
-    
-    /// <summary>
-    /// 是否挤出
-    /// </summary>
-    public bool IsExtrusion { get; set; }
-    
-    /// <summary>
-    /// 是否搅拌
-    /// </summary>
-    public bool IsMill { get; set; }
-    
-    /// <summary>
     /// 产品系数
     /// </summary>
     public string? ProduceCoefficient { get; set; }
@@ -64,7 +49,22 @@ public class ProduceOutput
     /// 产品系列
     /// </summary>
     public string? ProduceSeries { get; set; }
-    
+
+    /// <summary>
+    /// 计量单位
+    /// </summary>
+    public string? pUnit { get; set; }
+
+    /// <summary>
+    /// 计量单位
+    /// </summary>
+    public long? UnitId { get; set; }
+
+    /// <summary>
+    /// 设备类型(工艺)
+    /// </summary>
+    public string? DeviceTypes { get; set; }
+
     /// <summary>
     /// 备注
     /// </summary>

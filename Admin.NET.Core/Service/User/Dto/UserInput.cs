@@ -69,6 +69,8 @@ public class UpdateUserInput : AddUserInput
 {
 }
 
+
+
 public class DeleteUserInput : BaseIdInput
 {
     /// <summary>

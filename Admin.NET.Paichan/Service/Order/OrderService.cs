@@ -1,11 +1,17 @@
 ﻿using Admin.NET.Core;
+using Admin.NET.Core.Service;
 using Admin.NET.Paichan.Const;
 using Admin.NET.Paichan.Entity;
 using Furion.DependencyInjection;
 using Furion.DynamicApiController;
 using Furion.FriendlyException;
+using Magicodes.ExporterAndImporter.Core;
+using Magicodes.ExporterAndImporter.Excel;
 using Mapster;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
+using Furion;
 
 namespace Admin.NET.Paichan;
 /// <summary>
@@ -45,6 +51,7 @@ public class OrderService : IDynamicApiController, ITransient
             .WhereIF(!string.IsNullOrWhiteSpace(input.Customer), u => u.Customer.Contains(input.Customer.Trim()))
             //处理外键和TreeSelector相关字段的连接
             .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id)
+                .Where((u, produceid) => !produceid.IsDelete)
             .Select((u, produceid) => new OrderOutput
             {
                 Id = u.Id,
@@ -135,6 +142,14 @@ public class OrderService : IDynamicApiController, ITransient
     public async Task Add(AddOrderInput input)
     {
         var entity = input.Adapt<Order>();
+        var produce = await _rep.Context.Queryable<Produce>()
+            .FirstAsync(d => !d.IsDelete && d.Id == input.ProduceId);
+
+        var systemUnit = await _rep.Context.Queryable<SystemUnit>()
+            .FirstAsync(s => !s.IsDelete && s.Id == produce.UnitId);
+
+        entity.ProduceName = produce?.ProduceName ?? string.Empty;
+        entity.pUnit = systemUnit?.UnitName ?? string.Empty;
         await _rep.InsertAsync(entity);
     }
 
@@ -163,6 +178,108 @@ public class OrderService : IDynamicApiController, ITransient
     {
         var entity = input.Adapt<Order>();
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true).ExecuteCommandAsync();
+    }
+
+
+
+    /// <summary>
+    /// 获取未排产订单
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public async Task<List<OrderOutput>> ListNotPaichanOrderByDeviceId(OrderDetailDeviceInput input)
+    {
+        var device = await _rep.Context.Queryable<Device>().Where(u => !u.IsDelete && u.Id == input.DeviceId).FirstAsync();
+
+        var query = _rep.AsQueryable()
+                .Where(u => !u.IsDelete)
+            //处理外键和TreeSelector相关字段的连接
+                .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id)
+                .Where((u, produceid) => produceid.DeviceTypes.Contains(device.DeviceTypeId.ToString()) && !produceid.IsDelete)
+                .Select((u, produceid) => new OrderOutput
+                {
+                    Id = u.Id,
+                    OrderCode = u.OrderCode,
+                    OrderDate = u.OrderDate,
+                    DeliveryDate = u.DeliveryDate,
+                    StartDate = u.StartDate,
+                    EndDate = u.EndDate,
+                    ProduceId = u.ProduceId,
+                    ProduceIdProduceName = produceid.ProduceCode,
+                    ProduceName = u.ProduceName,
+                    ColorRgb = produceid.ColorRgb,
+                    BatchNumber = u.BatchNumber,
+                    Quantity = u.Quantity,
+                    pUnit = u.pUnit,
+                    Customer = u.Customer,
+                    Remark = u.Remark,
+                    CreateUserName = u.CreateUserName,
+                    UpdateUserName = u.UpdateUserName,
+                })
+            ;
+
+        var orders = await query.ToListAsync();
+
+        await _rep.AsSugarClient().ThenMapperAsync(orders, async o =>
+        {
+            var paiQty = await _repDetail.AsQueryable()
+                .Where(u => !u.IsDelete)
+                .Where(u => u.OrderId == o.Id)
+                .Where(u => u.DeviceTypeId == device.DeviceTypeId)
+                .SumAsync(u => u.Qty);
+            o.OrderSurplusQuantity = o.Quantity - (paiQty ?? 0);
+        });
+        orders = orders.Where(o => o.OrderSurplusQuantity > 0).ToList();
+        return orders;
+    }
+
+
+    /// <summary>
+    /// 获取订单列表导入模板
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+    [ApiDescriptionSettings(Name = "GetOrderTempExcel")]
+    public async Task<IActionResult> GetOrderTempExcel()
+    {
+        var fileName = "订单列表导入模板.xlsx";
+        var filePath = Path.Combine(App.WebHostEnvironment.WebRootPath, "Excel", "Temp");
+        if (!Directory.Exists(filePath)) Directory.CreateDirectory(filePath);
+        IImporter importer = new ExcelImporter();
+        var res = await importer.GenerateTemplate<OrderDto>(Path.Combine(filePath, fileName));
+        return new FileStreamResult(new FileStream(res.FileName, FileMode.OpenOrCreate), "application/octet-stream") { FileDownloadName = fileName };
+    }
+
+    /// <summary>
+    /// 上传Excel导入用户
+    /// </summary>
+    /// <returns></returns>
+    [ApiDescriptionSettings(Name = "ImportOrderExcel")]
+    public async Task ImportOrderExcel([Required] IFormFile file)
+    {
+        var newFile = await App.GetRequiredService<SysFileService>().UploadFile(file, "Excel/Import");
+        var filePath = Path.Combine(App.WebHostEnvironment.WebRootPath, newFile.FilePath, newFile.Name);
+        IImporter importer = new ExcelImporter();
+        var res = await importer.Import<OrderDto>(filePath);
+
+        var orderDtos = res.Data;
+        foreach (var orderDto in orderDtos)
+        {
+            var order = orderDto.Adapt<Order>();
+            var produce = await _rep.Context.Queryable<Produce>()
+                .FirstAsync(d => !d.IsDelete && d.ProduceCode == orderDto.ProduceCode);
+            var systemUnit = await _rep.Context.Queryable<SystemUnit>()
+                .FirstAsync(s => !s.IsDelete && s.Id == produce.UnitId);
+            order.ProduceId = produce?.Id ?? 0;
+            order.ProduceName = produce?.ProduceName ?? string.Empty;
+            order.pUnit = systemUnit?.UnitName ?? string.Empty;
+
+
+            await _rep.InsertAsync(order);
+        }
+
+        await App.GetRequiredService<SysFileService>().DeleteFile(new DeleteFileInput { Id = newFile.Id });
     }
 
     /// <summary>
@@ -202,6 +319,7 @@ public class OrderService : IDynamicApiController, ITransient
                 {
                     Label = u.ProduceCode,
                     Text = u.ProduceName,
+                    Unit = u.pUnit,
                     Value = u.Id
                 }
                 ).ToListAsync();

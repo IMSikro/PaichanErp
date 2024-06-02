@@ -20,11 +20,23 @@ public class OrderDetail : EntityTenant
     public long OrderId { get; set; }
 
     /// <summary>
-    /// 班次序号
+    /// 订单
+    /// </summary>
+    [Navigate(NavigateType.OneToOne, nameof(OrderId))]
+    public Order Order { get; set; }
+
+    /// <summary>
+    /// 批次序号
     /// </summary>
     [Required]
     [SugarColumn(ColumnName = "OrderDetailCode", ColumnDescription = "班次序号")]
     public string OrderDetailCode { get; set; }
+
+    /// <summary>
+    /// 班次序号
+    /// </summary>
+    [SugarColumn(ColumnName = "SN", ColumnDescription = "班次序号")]
+    public int? SN { get; set; }
 
     /// <summary>
     /// 班次产量
@@ -65,6 +77,37 @@ public class OrderDetail : EntityTenant
     [Required]
     [SugarColumn(ColumnName = "DeviceId", ColumnDescription = "设备外键")]
     public long DeviceId { get; set; }
+
+    /// <summary>
+    /// 设备类型外键
+    /// (排产工艺识别)
+    /// </summary>
+    [SugarColumn(ColumnName = "DeviceTypeId", ColumnDescription = "设备类型外键")]
+    public long? DeviceTypeId { get; set; }
+
+    /// <summary>
+    /// 设备未生产时间
+    /// </summary>
+    [SugarColumn(ColumnName = "DeviceErrorTime", ColumnDescription = "设备未生产时间")]
+    public double? DeviceErrorTime { get; set; }
+
+    /// <summary>
+    /// 设备未生产类型
+    /// </summary>
+    [SugarColumn(ColumnName = "DeviceErrorType", ColumnDescription = "设备未生产类型")]
+    public string? DeviceErrorType { get; set; }
+
+    /// <summary>
+    /// 设备未生产类型
+    /// </summary>
+    [SugarColumn(ColumnName = "DeviceErrorTypeId", ColumnDescription = "设备未生产类型外键")]
+    public long? DeviceErrorTypeId { get; set; }
+
+    /// <summary>
+    /// 设备未生产类型
+    /// </summary>
+    [Navigate(NavigateType.OneToOne, nameof(DeviceErrorTypeId))]
+    public DeviceErrorType? DeviceErrorTypeModel { get; set; }
 
     /// <summary>
     /// 操作人员

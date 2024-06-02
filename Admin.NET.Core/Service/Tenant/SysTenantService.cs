@@ -242,6 +242,8 @@ public class SysTenantService : IDynamicApiController, ITransient
             1310000000161,1310000000162,1310000000163,1310000000164, // 个人中心
             1310000000171,1310000000172,1310000000173,1310000000174,1310000000175,1310000000176,1310000000177 // 通知公告
         };
+
+
         await _sysRoleMenuService.GrantRoleMenu(new RoleMenuInput() { Id = newRole.Id, MenuIdList = menuIdList });
     }
 
