@@ -358,6 +358,23 @@ public class OrderDetailService : IDynamicApiController, ITransient
     }
 
     /// <summary>
+    /// 批量修改排产到设备
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    [ApiDescriptionSettings(Name = "BatchUpdateDevices")]
+    public async Task<int> BatchUpdateDevices(OrderDetailUpdateDeviceInput input)
+    {
+        if (input.Ids.Count == 0 || input.DeviceId == 0L) throw Oops.Oh("传参有误,请检查!");
+        if (input.Ids.Any(i => i <= 0L)) throw Oops.Oh("传参有误,请检查!");
+        var result = await _rep.AsUpdateable()
+            .SetColumns(it => new OrderDetail { DeviceId = input.DeviceId, Sort = it.Sort + 999 })
+            .Where(u => input.Ids.Contains(u.Id)).ExecuteCommandAsync();
+        return result;
+    }
+
+    /// <summary>
     /// 删除订单排产
     /// </summary>
     /// <param name="input"></param>

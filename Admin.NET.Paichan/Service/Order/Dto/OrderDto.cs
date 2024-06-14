@@ -66,6 +66,12 @@ public class OrderDto
     public string Customer { get; set; }
 
     /// <summary>
+    /// 设备编号
+    /// </summary>
+    [ImporterHeader(Name = "设备编号")]
+    public string? DeviceCode { get; set; }
+
+    /// <summary>
     /// 备注
     /// </summary>
     [ImporterHeader(Name = "备注")]

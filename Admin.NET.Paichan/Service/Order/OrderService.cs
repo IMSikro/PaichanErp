@@ -264,6 +264,7 @@ public class OrderService : IDynamicApiController, ITransient
         var res = await importer.Import<OrderDto>(filePath);
 
         var orderDtos = res.Data;
+        var orderList = new List<Order>();
         foreach (var orderDto in orderDtos)
         {
             var order = orderDto.Adapt<Order>();
@@ -275,9 +276,11 @@ public class OrderService : IDynamicApiController, ITransient
             order.ProduceName = produce?.ProduceName ?? string.Empty;
             order.pUnit = systemUnit?.UnitName ?? string.Empty;
 
-
-            await _rep.InsertAsync(order);
+            orderList.Add(order);
+            //await _rep.InsertAsync(order);
         }
+
+        await _rep.InsertRangeAsync(orderList);
 
         await App.GetRequiredService<SysFileService>().DeleteFile(new DeleteFileInput { Id = newFile.Id });
     }

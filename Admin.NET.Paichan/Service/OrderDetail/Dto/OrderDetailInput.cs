@@ -115,6 +115,23 @@ public class OrderDetailDeviceInput
 }
 
 /// <summary>
+/// 批量修改排产到设备
+/// </summary>
+public class OrderDetailUpdateDeviceInput
+{
+    /// <summary>
+    /// 排产Id
+    /// </summary>
+    [Required(ErrorMessage = "排产Id不能为空")]
+    public List<long> Ids { get; set; } = [];
+    /// <summary>
+    /// 设备Id
+    /// </summary>
+    [Required(ErrorMessage = "设备Id不能为空")]
+    public long DeviceId { get; set; }
+}
+
+/// <summary>
 /// 查询工艺所有排产
 /// </summary>
 public class OrderDetailDeviceTypeInput

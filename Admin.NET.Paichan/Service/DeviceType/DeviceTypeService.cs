@@ -81,9 +81,8 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                     .Where(u => u.DeviceTypeId == d.Id)
                     //处理外键和TreeSelector相关字段的连接
                     .LeftJoin<Order>((u, orderid) => u.OrderId == orderid.Id)
-                    .Where((u, orderid) => !orderid.IsDelete)
                     .LeftJoin<Produce>((u, orderid, produceid) => orderid.ProduceId == produceid.Id)
-                    .Where((u, orderid, produceid) => !produceid.IsDelete)
+                    .Where((u, orderid, produceid) => !orderid.IsDelete && !produceid.IsDelete)
                     .SumAsync(u => u.Qty);
                 o.OrderSurplusQuantity = o.Quantity - (paiQty ?? 0);
             }
@@ -104,8 +103,8 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 .Where((u, orderid, produceid) => !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder.Select(u => u.OrderId).Distinct().Count();
-            d.OrderNumber = paiOrder.Sum(u => u.Qty) ?? 0;
+            d.OrderBatchNum = paiOrder.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderNumber = paiOrder.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
             paiOrder = paiOrder.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
             // 获取工艺已完工数量及批数
@@ -189,8 +188,8 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 .Where((u, orderid, produceid) => !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder.Select(u => u.OrderId).Distinct().Count();
-            d.OrderNumber = paiOrder.Sum(u => u.Qty) ?? 0;
+            d.OrderBatchNum = paiOrder.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderNumber = paiOrder.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
             paiOrder = paiOrder.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
             // 获取工艺已完工数量及批数
