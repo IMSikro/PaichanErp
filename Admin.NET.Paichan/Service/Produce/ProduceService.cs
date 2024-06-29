@@ -149,19 +149,50 @@ public class ProduceService : IDynamicApiController, ITransient
 
             produce.ProduceType = produceType?.Id ?? 0;
             produce.ProduceSeries = produceType?.ProduceSeries ?? "";
-
-            produce.UnitId = (await _rep.Context.Queryable<SystemUnit>()
-                .FirstAsync(su => !su.IsDelete && su.UnitName == produce.pUnit))?.Id;
-
-            var dtList = produceDto.DeviceTypes.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
+            if(!string.IsNullOrWhiteSpace(produceDto.pUnit))
+                produce.UnitId = (await _rep.Context.Queryable<SystemUnit>()
+                .FirstAsync(su => !su.IsDelete && su.UnitName == produceDto.pUnit))?.Id;
             var dtIds = _rep.Context.Queryable<DeviceType>()
-                .Where(dt => !dt.IsDelete && dtList.Contains(dt.TypeName, true));
-            produce.DeviceTypes = string.Join(',', await dtIds.Select(dt => dt.Id).ToListAsync());
+                .Where(dt => !dt.IsDelete);
+            if (string.IsNullOrWhiteSpace(produceDto.DeviceTypes))
+            {
+                dtIds = dtIds.Where(dt => dt.NormalType);
+            }
+            else
+            {
+                var dtList = produceDto.DeviceTypes.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                dtIds = dtIds.Where(dt => dtList.Contains(dt.TypeName, true));
+            }
+
+            var dtIdList = await dtIds.Select(dt => dt.Id).ToListAsync();
+            produce.DeviceTypes = string.Join(',', dtIdList);
 
             await _rep.InsertAsync(produce);
         }
 
         await App.GetRequiredService<SysFileService>().DeleteFile(new DeleteFileInput { Id = newFile.Id });
+    }
+
+    /// <summary>
+    /// 删除无用工艺列表
+    /// </summary>
+    /// <param name="deviceTypeIds"></param>
+    /// <returns></returns>
+    [HttpGet]
+    public async Task DeleteDeviceTypes(List<long> deviceTypeIds)
+    {
+        if (deviceTypeIds != null && deviceTypeIds.Count > 0)
+            foreach (var deviceTypeId in deviceTypeIds)
+            {
+                var pList = await _rep.AsQueryable().Where(o => !o.IsDelete && o.DeviceTypes.Contains(deviceTypeId.ToString())).ToListAsync();
+                foreach (var produce in pList)
+                {
+                    var dList = produce.DeviceTypes.Split(',', StringSplitOptions.RemoveEmptyEntries).Distinct().OrderBy(d => d).ToList();
+                    dList.Remove(deviceTypeId.ToString());
+                    produce.DeviceTypes = string.Join(',', dList);
+                }
+                await _rep.AsUpdateable(pList).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+            }
     }
 
     /// <summary>

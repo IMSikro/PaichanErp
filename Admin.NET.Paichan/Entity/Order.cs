@@ -45,6 +45,12 @@ public class Order : EntityTenant
     public DateTime? EndDate { get; set; }
 
     /// <summary>
+    /// 是否完工
+    /// </summary>
+    [SugarColumn(ColumnName = "IsEnd", ColumnDescription = "是否完工", DefaultValue = "0")]
+    public bool IsEnd { get; set; } = false;
+
+    /// <summary>
     /// 产品外键
     /// </summary>
     [Required]
@@ -52,11 +58,35 @@ public class Order : EntityTenant
     public long ProduceId { get; set; }
 
     /// <summary>
+    /// 产品编号
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号",Length = 50)]
+    public string? ProduceCode { get; set; }
+
+    /// <summary>
     /// 产品名称
     /// </summary>
     [Required]
     [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称",Length = 50)]
     public string ProduceName { get; set; }
+
+    /// <summary>
+    /// 完工工艺
+    /// </summary>
+    [SugarColumn(ColumnName = "EndDeviceTypes", ColumnDescription = "完工工艺")]
+    public string? EndDeviceTypes { get; set; }
+
+    /// <summary>
+    /// 异常工艺
+    /// </summary>
+    [SugarColumn(ColumnName = "ErrorDeviceType", ColumnDescription = "异常工艺")]
+    public long? ErrorDeviceType { get; set; }
+
+    /// <summary>
+    /// 设备类型(工艺)
+    /// </summary>
+    [SugarColumn(ColumnName = "DeviceTypes", ColumnDescription = "设备类型(工艺)", Length = 255)]
+    public string? DeviceTypes { get; set; }
 
     /// <summary>
     /// 批次号

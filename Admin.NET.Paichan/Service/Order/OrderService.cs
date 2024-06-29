@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using Furion;
+using Furion.UnifyResult;
+using AngleSharp.Dom;
 
 namespace Admin.NET.Paichan;
 /// <summary>
@@ -22,10 +24,11 @@ public class OrderService : IDynamicApiController, ITransient
 {
     private readonly SqlSugarRepository<Order> _rep;
     private readonly SqlSugarRepository<OrderDetail> _repDetail;
-    public OrderService(SqlSugarRepository<Order> rep,SqlSugarRepository<OrderDetail> repDetail)
+    public OrderService(SqlSugarRepository<Order> rep, SqlSugarRepository<OrderDetail> repDetail)
     {
         _rep = rep;
         _repDetail = repDetail;
+
     }
 
     /// <summary>
@@ -62,7 +65,9 @@ public class OrderService : IDynamicApiController, ITransient
                 EndDate = u.EndDate,
                 ProduceId = u.ProduceId,
                 ProduceIdProduceName = produceid.ProduceCode,
+                ProduceCode = u.ProduceCode,
                 ProduceName = u.ProduceName,
+                IsEnd = u.IsEnd,
                 ColorRgb = produceid.ColorRgb,
                 BatchNumber = u.BatchNumber,
                 Quantity = u.Quantity,
@@ -73,26 +78,26 @@ public class OrderService : IDynamicApiController, ITransient
                 UpdateUserName = u.UpdateUserName,
             })
             ;
-        if(input.OrderDateRange != null && input.OrderDateRange.Count >0)
+        if (input.OrderDateRange != null && input.OrderDateRange.Count > 0)
         {
-            DateTime? start= input.OrderDateRange[0]; 
+            DateTime? start = input.OrderDateRange[0];
             query = query.WhereIF(start.HasValue, u => u.OrderDate > start);
-            if (input.OrderDateRange.Count >1 && input.OrderDateRange[1].HasValue)
+            if (input.OrderDateRange.Count > 1 && input.OrderDateRange[1].HasValue)
             {
                 var end = input.OrderDateRange[1].Value.AddDays(1);
                 query = query.Where(u => u.OrderDate < end);
             }
-        } 
-        if(input.DeliveryDateRange != null && input.DeliveryDateRange.Count >0)
+        }
+        if (input.DeliveryDateRange != null && input.DeliveryDateRange.Count > 0)
         {
-            DateTime? start= input.DeliveryDateRange[0]; 
+            DateTime? start = input.DeliveryDateRange[0];
             query = query.WhereIF(start.HasValue, u => u.DeliveryDate > start);
-            if (input.DeliveryDateRange.Count >1 && input.DeliveryDateRange[1].HasValue)
+            if (input.DeliveryDateRange.Count > 1 && input.DeliveryDateRange[1].HasValue)
             {
                 var end = input.DeliveryDateRange[1].Value.AddDays(1);
                 query = query.Where(u => u.DeliveryDate < end);
             }
-        } 
+        }
         query = query.OrderBuilder(input, "u.", "CreateTime");
         var orders = await query.ToPagedListAsync(input.Page, input.PageSize);
 
@@ -115,6 +120,7 @@ public class OrderService : IDynamicApiController, ITransient
                     DeviceId = u.DeviceId,
                     DeviceIdDeviceCode = deviceid.DeviceCode,
                     OperatorUsers = u.OperatorUsers,
+                    IsEnd = u.IsEnd,
                     Qty = u.Qty,
                     pUnit = u.pUnit,
                     Sort = u.Sort,
@@ -148,7 +154,9 @@ public class OrderService : IDynamicApiController, ITransient
         var systemUnit = await _rep.Context.Queryable<SystemUnit>()
             .FirstAsync(s => !s.IsDelete && s.Id == produce.UnitId);
 
+        entity.ProduceCode = produce?.ProduceCode ?? string.Empty;
         entity.ProduceName = produce?.ProduceName ?? string.Empty;
+        entity.DeviceTypes = produce?.DeviceTypes ?? string.Empty;
         entity.pUnit = systemUnit?.UnitName ?? string.Empty;
         await _rep.InsertAsync(entity);
     }
@@ -193,8 +201,8 @@ public class OrderService : IDynamicApiController, ITransient
         var device = await _rep.Context.Queryable<Device>().Where(u => !u.IsDelete && u.Id == input.DeviceId).FirstAsync();
 
         var query = _rep.AsQueryable()
-                .Where(u => !u.IsDelete)
-            //处理外键和TreeSelector相关字段的连接
+                .Where(u => !u.IsDelete && !u.IsEnd)
+                //处理外键和TreeSelector相关字段的连接
                 .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id)
                 .Where((u, produceid) => produceid.DeviceTypes.Contains(device.DeviceTypeId.ToString()) && !produceid.IsDelete)
                 .Select((u, produceid) => new OrderOutput
@@ -207,8 +215,10 @@ public class OrderService : IDynamicApiController, ITransient
                     EndDate = u.EndDate,
                     ProduceId = u.ProduceId,
                     ProduceIdProduceName = produceid.ProduceCode,
+                    ProduceCode = u.ProduceCode,
                     ProduceName = u.ProduceName,
                     ColorRgb = produceid.ColorRgb,
+                    IsEnd = u.IsEnd,
                     BatchNumber = u.BatchNumber,
                     Quantity = u.Quantity,
                     pUnit = u.pUnit,
@@ -223,14 +233,17 @@ public class OrderService : IDynamicApiController, ITransient
 
         await _rep.AsSugarClient().ThenMapperAsync(orders, async o =>
         {
-            var paiQty = await _repDetail.AsQueryable()
+            var paiOrder = await _repDetail.AsQueryable()
                 .Where(u => !u.IsDelete)
                 .Where(u => u.OrderId == o.Id)
-                .Where(u => u.DeviceTypeId == device.DeviceTypeId)
-                .SumAsync(u => u.Qty);
+                .Where(u => u.DeviceTypeId == device.DeviceTypeId).ToListAsync();
+            var paiQty = paiOrder.Sum(u => u.Qty);
+            var isEnd = paiOrder.Any(od => od.IsEnd);
             o.OrderSurplusQuantity = o.Quantity - (paiQty ?? 0);
+            o.DeviceTypeIsEnd = isEnd;
+
         });
-        orders = orders.Where(o => o.OrderSurplusQuantity > 0).ToList();
+        orders = orders.Where(o => o.OrderSurplusQuantity > 0 && !o.DeviceTypeIsEnd).ToList();
         return orders;
     }
 
@@ -264,25 +277,139 @@ public class OrderService : IDynamicApiController, ITransient
         var res = await importer.Import<OrderDto>(filePath);
 
         var orderDtos = res.Data;
-        var orderList = new List<Order>();
+        var errOrder = new List<OrderExtenDto>();
         foreach (var orderDto in orderDtos)
         {
             var order = orderDto.Adapt<Order>();
             var produce = await _rep.Context.Queryable<Produce>()
                 .FirstAsync(d => !d.IsDelete && d.ProduceCode == orderDto.ProduceCode);
-            var systemUnit = await _rep.Context.Queryable<SystemUnit>()
-                .FirstAsync(s => !s.IsDelete && s.Id == produce.UnitId);
             order.ProduceId = produce?.Id ?? 0;
+            order.ProduceCode = produce?.ProduceCode ?? string.Empty;
             order.ProduceName = produce?.ProduceName ?? string.Empty;
-            order.pUnit = systemUnit?.UnitName ?? string.Empty;
+            order.DeviceTypes = produce?.DeviceTypes ?? string.Empty;
+            if (produce != null)
+            {
+                var systemUnit = await _rep.Context.Queryable<SystemUnit>()
+                    .FirstAsync(s => !s.IsDelete && s.Id == produce.UnitId);
+                order.pUnit = systemUnit?.UnitName ?? string.Empty;
+            }
 
-            orderList.Add(order);
-            //await _rep.InsertAsync(order);
+            if (order.ProduceId == 0)
+            {
+                orderDto.Remark = "该产品不存在!";
+                errOrder.Add(orderDto.Adapt<OrderExtenDto>());
+            }
+            else
+            {
+                await _rep.InsertAsync(order);
+                if (!string.IsNullOrWhiteSpace(orderDto.DeviceCode))
+                {
+                    var codes = orderDto.DeviceCode.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                    var deviceIds = await _rep.Context.Queryable<Device>()
+                        .Where(d => !d.IsDelete && codes.Contains(d.DeviceCode, true)).Select(d => d.Id).ToListAsync();
+                    var odListInput = deviceIds.Select(d => new AddOrderDetailInput
+                    {
+                        OrderId = order.Id,
+                        DeviceId = d,
+                        Qty = order.Quantity,
+                        pUnit = order.pUnit,
+                    }
+                    ).ToList();
+                    await App.GetRequiredService<OrderDetailService>().Add(odListInput);
+                }
+            }
         }
 
-        await _rep.InsertRangeAsync(orderList);
-
         await App.GetRequiredService<SysFileService>().DeleteFile(new DeleteFileInput { Id = newFile.Id });
+
+        if (errOrder.Any())
+        {
+            IExportFileByTemplate exporter = new ExcelExporter();
+            //var result = await exporter.Export($"errorOrderExcel.xlsx", errOrder);
+            var tempFileName = Path.Combine(App.WebHostEnvironment.WebRootPath, "Excel", "Temp", "OrderErrorTemplate.xlsx");
+
+            var bytes = await exporter.ExportBytesByTemplate(new OrderDtoTemp { OrderDtos = errOrder }, tempFileName);
+            var base64 = Convert.ToBase64String(bytes);
+            var errorExcelFile = await App.GetRequiredService<SysFileService>().UploadFileFromBase64(new UploadFileFromBase64Input()
+            {
+                FileDataBase64 = base64,
+                ContentType = "application/vnd.ms-excel",
+                FileName = $"errorOrderExcel{DateTime.Now:yyyyMMddHHmmssfff}.xlsx",
+                Path = "Excel/ErrorExport"
+            });
+            var url = errorExcelFile.Url;
+            UnifyContext.Fill(new { Message = "订单上传异常,不存在相应的产品!", url, fileName = "错误订单列表.xlsx", count = errOrder.Count });
+        }
+    }
+
+    /// <summary>
+    /// 获取订单列表
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [ApiDescriptionSettings(Name = "SetOrderEndState")]
+    public async Task SetOrderEndState()
+    {
+        var allOrders = await _rep.AsQueryable().Where(o => !o.IsDelete && !o.IsEnd).ToListAsync();
+        foreach (var order in allOrders)
+        {
+            var produce = await _rep.Context.Queryable<Produce>().Where(p => !p.IsDelete && p.Id == order.ProduceId).FirstAsync();
+            if(produce != null)
+            {
+                var produceDeviceTypeIds = produce.DeviceTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(dt => Convert.ToInt64(dt)).ToList() ?? [];
+
+                var _dtypeList = order.EndDeviceTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(ee => Convert.ToInt64(ee)).ToList() ?? [];
+
+                int count = 0;
+                foreach (var typeId in produceDeviceTypeIds)
+                {
+                    var od3 = await _rep.Context.Queryable<OrderDetail>().Where(od =>
+                            !od.IsDelete && od.OrderId == order.Id && od.DeviceTypeId == typeId && od.EndDate != null)
+                        .ToListAsync();
+
+                    if (od3 != null && od3.Count > 0)
+                    {
+                        var isEnd = od3.Any(od => od.IsEnd);
+                        var sumCount = od3.Sum(od => od.Qty);
+
+                        if (isEnd || sumCount >= order.Quantity)
+                        {
+                            _dtypeList.Add(typeId);
+                            _dtypeList = _dtypeList.Distinct().ToList();
+                            count++;
+                        }
+                    }
+                }
+
+                if (_dtypeList.Count > 0) order.EndDeviceTypes = string.Join(",", _dtypeList);
+                if (count > 0 && count >= produceDeviceTypeIds.Count) order.IsEnd = true;
+                await _rep.Context.Updateable(order)
+                    .IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 删除无用工艺列表
+    /// </summary>
+    /// <param name="deviceTypeIds"></param>
+    /// <returns></returns>
+    [HttpGet]
+    public async Task DeleteDeviceTypes(List<long> deviceTypeIds)
+    {
+        if(deviceTypeIds != null && deviceTypeIds.Count > 0)
+            foreach (var deviceTypeId in deviceTypeIds)
+            {
+                var oList = await _rep.AsQueryable().Where(o => !o.IsDelete && o.DeviceTypes.Contains(deviceTypeId.ToString())).ToListAsync();
+                foreach (var order in oList)
+                {
+                    var dList = order.DeviceTypes.Split(',', StringSplitOptions.RemoveEmptyEntries).Distinct().OrderBy(d => d).ToList();
+                    dList.Remove(deviceTypeId.ToString());
+                    order.DeviceTypes = string.Join(',', dList);
+                }
+                await _rep.AsUpdateable(oList).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+            }
     }
 
     /// <summary>

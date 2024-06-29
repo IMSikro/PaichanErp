@@ -16,6 +16,11 @@ public class DeviceTypeOutput
     public string TypeName { get; set; }
 
     /// <summary>
+    /// 是否默认工艺
+    /// </summary>
+    public bool NormalType { get; set; }
+
+    /// <summary>
     /// 排序
     /// </summary>
     public int? Sort { get; set; }

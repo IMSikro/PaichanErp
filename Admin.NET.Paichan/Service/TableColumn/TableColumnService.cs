@@ -32,7 +32,8 @@ public class TableColumnService : IDynamicApiController, ITransient
         _output = new List<TableColumnOutput>
         {
             new(){ Lable = "颜色", Prop = "colorRgb", IsHidden = false,PageType = "控制台",Width = "120"},
-            new(){ Lable = "产品编号", Prop = "produceIdProduceName", IsHidden = false,PageType = "控制台",Width = "120"},
+            new(){ Lable = "产品编号", Prop = "produceCode", IsHidden = false,PageType = "控制台",Width = "120"},
+            new(){ Lable = "产品名称", Prop = "produceName", IsHidden = false,PageType = "控制台",Width = "120"},
             new(){ Lable = "数量", Prop = "qty", IsHidden = false,PageType = "控制台",Width = "120"},
             new(){ Lable = "交期", Prop = "deliveryDate", IsHidden = false,PageType = "控制台",Width = "120"},
             new(){ Lable = "单位", Prop = "pUnit", IsHidden = true,PageType = "控制台",Width = "120"},

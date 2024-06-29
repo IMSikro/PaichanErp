@@ -49,6 +49,10 @@ public class OrderDetailService : IDynamicApiController, ITransient
                 OrderDetailCode = u.OrderDetailCode,
                 StartDate = u.StartDate,
                 EndDate = u.EndDate,
+                ProduceId = u.ProduceId,
+                ProduceIdProduceName = produceid.ProduceCode,
+                ProduceCode = u.ProduceCode,
+                ProduceName = u.ProduceName,
                 DeliveryDate = orderid.DeliveryDate,
                 DeviceId = u.DeviceId,
                 DeviceIdDeviceCode = deviceid.DeviceCode,
@@ -58,6 +62,7 @@ public class OrderDetailService : IDynamicApiController, ITransient
                 DeviceTypeId = u.DeviceTypeId,
                 OperatorUsers = u.OperatorUsers,
                 OperatorUsersRealName = "",
+                IsEnd = u.IsEnd,
                 Qty = u.Qty,
                 pUnit = u.pUnit,
                 Sort = u.Sort,
@@ -111,9 +116,10 @@ public class OrderDetailService : IDynamicApiController, ITransient
                     OperatorUsersRealName = "",
                     Qty = u.Qty,
                     pUnit = u.pUnit,
-                    ProduceId = orderid.ProduceId,
+                    ProduceId = u.ProduceId,
                     ProduceIdProduceName = produceid.ProduceCode,
-                    ProduceName = orderid.ProduceName,
+                    ProduceCode = u.ProduceCode,
+                    ProduceName = u.ProduceName,
                     ColorRgb = produceid.ColorRgb,
                     Sort = u.Sort,
                     Remark = u.Remark,
@@ -164,9 +170,10 @@ public class OrderDetailService : IDynamicApiController, ITransient
                     OperatorUsersRealName = "",
                     Qty = u.Qty,
                     pUnit = u.pUnit,
-                    ProduceId = orderid.ProduceId,
+                    ProduceId = u.ProduceId,
                     ProduceIdProduceName = produceid.ProduceCode,
-                    ProduceName = orderid.ProduceName,
+                    ProduceCode = u.ProduceCode,
+                    ProduceName = u.ProduceName,
                     ColorRgb = produceid.ColorRgb,
                     Sort = u.Sort,
                     Remark = u.Remark,
@@ -228,7 +235,7 @@ public class OrderDetailService : IDynamicApiController, ITransient
         List<long> groupDeviceIds = [];
         if (input.GroupId > 0)
             groupDeviceIds = (await _rep.Context.Queryable<DeviceGroup>()
-                .FirstAsync(wa => !wa.IsDelete && wa.Id == input.GroupId))?.DeviceIds?.Split(',').Distinct().ToList().Select(wa => Convert.ToInt64(wa)).ToList() ?? [];
+                .FirstAsync(wa => !wa.IsDelete && wa.Id == input.GroupId))?.DeviceIds?.Split(',', StringSplitOptions.RemoveEmptyEntries).Distinct().ToList().Select(wa => Convert.ToInt64(wa)).ToList() ?? [];
         var query = _rep.AsQueryable()
                 .Where(u => !u.IsDelete && u.EndDate == null)
                 .WhereIF(input.GroupId > 0, u => groupDeviceIds.Contains(u.Id))
@@ -256,9 +263,10 @@ public class OrderDetailService : IDynamicApiController, ITransient
                     OperatorUsersRealName = "",
                     Qty = u.Qty,
                     pUnit = u.pUnit,
-                    ProduceId = orderid.ProduceId,
+                    ProduceId = u.ProduceId,
                     ProduceIdProduceName = produceid.ProduceCode,
-                    ProduceName = orderid.ProduceName,
+                    ProduceCode = u.ProduceCode,
+                    ProduceName = u.ProduceName,
                     ColorRgb = produceid.ColorRgb,
                     Sort = u.Sort,
                     Remark = u.Remark,
@@ -315,6 +323,9 @@ public class OrderDetailService : IDynamicApiController, ITransient
             if(string.IsNullOrWhiteSpace(device.OperatorUsers)) throw Oops.Oh("请先设置设备操作人员!");
             entity.OperatorUsers = device.OperatorUsers;
         }
+        entity.ProduceId = order.ProduceId;
+        entity.ProduceCode = order.ProduceCode;
+        entity.ProduceName = order.ProduceName;
         entity.SN = lastSN + 1;
         entity.OrderDetailCode = $"{order.BatchNumber}-{entity.SN}";
         await _rep.InsertAsync(entity);
@@ -340,6 +351,10 @@ public class OrderDetailService : IDynamicApiController, ITransient
             {
                 order = await _rep.Context.Queryable<Order>().FirstAsync(u => u.Id == orderDetail.OrderId);
                 lastSN = await _rep.AsQueryable().Where(u => u.OrderId == orderDetail.OrderId).MaxAsync(u => u.SN) ?? 0;
+
+                orderDetail.ProduceId = order.ProduceId;
+                orderDetail.ProduceCode = order.ProduceCode;
+                orderDetail.ProduceName = order.ProduceName;
             }
             if (orderDetail.DeviceId > 0)
             {
@@ -406,13 +421,8 @@ public class OrderDetailService : IDynamicApiController, ITransient
             if (!string.IsNullOrWhiteSpace(device.OperatorUsers)) entity.OperatorUsers = device.OperatorUsers;
         }
 
-        if (input.EndDate != null)
-        {
-            if(input.EndDate > new DateTime(1970,1,1))
-                input.EndDate = DateTime.Now;
-            else input.EndDate = null;
-        }
-        
+        entity.EndDate = null;
+
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
     }
 
@@ -429,13 +439,19 @@ public class OrderDetailService : IDynamicApiController, ITransient
         var entity = await _rep.AsQueryable().FirstAsync(od => od.Id == input.Id);
         var yuanQty = entity.Qty;
 
+        var order = await _rep.Context.Queryable<Order>().FirstAsync(o => o.Id == entity.OrderId);
+        var deviceTypeId = entity.DeviceTypeId ?? 0;
+        var produce = await _rep.Context.Queryable<Produce>()
+            .Where(p => !p.IsDelete && p.Id == order.ProduceId).FirstAsync();
+        var produceDeviceTypeIds = produce.DeviceTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(dt => Convert.ToInt64(dt)).ToList() ?? [];
+
         entity.EndDate = DateTime.Now;
         entity.Qty = input.Qty;
         entity.DeviceErrorTime = input.DeviceErrorTime;
         entity.DeviceErrorTypeId = input.DeviceErrorTypeId;
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
-        var sn = (await _rep.AsQueryable().Where(od => od.OrderId == entity.OrderId).MaxAsync(od => od.SN)) ?? 0;
-        var batchCode = (await _rep.Context.Queryable<Order>().FirstAsync(o => o.Id == entity.OrderId)).BatchNumber;
+        var sn = (await _rep.AsQueryable().Where(od => !od.IsDelete && od.OrderId == entity.OrderId).MaxAsync(od => od.SN)) ?? 0;
+        var batchCode = order?.BatchNumber;
         if (yuanQty > input.Qty)
         {
             var orderDetail = new OrderDetail
@@ -454,6 +470,37 @@ public class OrderDetailService : IDynamicApiController, ITransient
 
             await _rep.InsertAsync(orderDetail);
         }
+
+        var sumQty = await _rep.AsQueryable()
+            .Where(od => !od.IsDelete && od.OrderId == entity.OrderId && od.DeviceTypeId == deviceTypeId)
+            .SumAsync(od => od.Qty);
+
+        if(sumQty >= order.Quantity)
+        {
+            var dtypeList = order.EndDeviceTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(ee => Convert.ToInt64(ee)).ToList() ?? new List<long>();
+            dtypeList.Add(deviceTypeId);
+            dtypeList = dtypeList.Distinct().ToList();
+            order.EndDeviceTypes = string.Join(",", dtypeList);
+
+            entity.IsEnd = true;
+
+            await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+
+            int count = 0;
+            foreach (var typeId in produceDeviceTypeIds)
+            {
+                var od3 = await _rep.AsQueryable()
+                    .Where(od => !od.IsDelete && od.OrderId == entity.OrderId && od.DeviceTypeId == typeId && od.EndDate != null).ToListAsync();
+
+                var isEnd = od3.Any(od => od.IsEnd);
+                var sumCount = od3.Sum(od => od.Qty);
+
+                if (isEnd || sumCount >= order.Quantity) count++;
+            }
+
+            if (count >= produceDeviceTypeIds.Count) order.IsEnd = true;
+            await _rep.Context.Updateable(order).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+        }
     }
 
     /// <summary>
@@ -466,7 +513,11 @@ public class OrderDetailService : IDynamicApiController, ITransient
     public async Task Done(DoneOrderDetailInput input)
     {
         var entity = await _rep.AsQueryable().FirstAsync(od => od.Id == input.Id);
-        //var order = await _rep.Context.Queryable<Order>().FirstAsync(u => u.Id == entity.OrderId);
+        var order = await _rep.Context.Queryable<Order>().FirstAsync(u => u.Id == entity.OrderId);
+        var deviceTypeId = entity.DeviceTypeId ?? 0;
+        var produce = await _rep.Context.Queryable<Produce>()
+            .Where(p => !p.IsDelete && p.Id == order.ProduceId).FirstAsync();
+        var produceDeviceTypeIds = produce.DeviceTypes?.Split(',',StringSplitOptions.RemoveEmptyEntries).Select(dt => Convert.ToInt64(dt)).ToList() ?? [];
         //order.EndDate = DateTime.Now;
         //await _rep.Context.Updateable(order)
         //    .IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
@@ -474,8 +525,25 @@ public class OrderDetailService : IDynamicApiController, ITransient
         entity.Qty = input.Qty;
         entity.DeviceErrorTime = input.DeviceErrorTime;
         entity.DeviceErrorTypeId = input.DeviceErrorTypeId;
+        entity.IsEnd = true;
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
-        
+
+        var dtypeList = order.EndDeviceTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(ee => Convert.ToInt64(ee)).ToList() ?? [];
+        dtypeList.Add(deviceTypeId);
+        dtypeList = dtypeList.Distinct().ToList();
+        order.EndDeviceTypes = string.Join(",", dtypeList);
+        await _rep.Context.Updateable(order).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
+
+        int count = 0;
+        foreach (var typeId in produceDeviceTypeIds)
+        {
+            var od3 = _rep.AsQueryable()
+                .Where(od => !od.IsDelete && od.OrderId == entity.OrderId && od.DeviceTypeId == typeId);
+
+            if ((await od3.AnyAsync(od => od.IsEnd)) || (await od3.SumAsync(od => od.Qty)) >= order.Quantity) count++;
+        }
+
+        if (count >= produceDeviceTypeIds.Count) order.IsEnd = true;
     }
 
 

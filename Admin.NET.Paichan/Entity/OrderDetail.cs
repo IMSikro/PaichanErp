@@ -72,6 +72,30 @@ public class OrderDetail : EntityTenant
     public DateTime? EndDate { get; set; }
 
     /// <summary>
+    /// 是否完工
+    /// </summary>
+    [SugarColumn(ColumnName = "IsEnd", ColumnDescription = "是否完工", DefaultValue = "0")]
+    public bool IsEnd { get; set; } = false;
+
+    /// <summary>
+    /// 产品外键
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceId", ColumnDescription = "产品外键")]
+    public long? ProduceId { get; set; }
+
+    /// <summary>
+    /// 产品编号
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号", Length = 50)]
+    public string? ProduceCode { get; set; }
+
+    /// <summary>
+    /// 产品名称
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称", Length = 50)]
+    public string? ProduceName { get; set; }
+
+    /// <summary>
     /// 设备外键
     /// </summary>
     [Required]

@@ -46,6 +46,11 @@ public class OrderOutput
     public string ProduceIdProduceName { get; set; } 
     
     /// <summary>
+    /// 产品编号
+    /// </summary>
+    public string ProduceCode { get; set; } 
+    
+    /// <summary>
     /// 产品名称
     /// </summary>
     public string ProduceName { get; set; }
@@ -69,6 +74,21 @@ public class OrderOutput
     /// 订单余量
     /// </summary>
     public double? OrderSurplusQuantity { get; set; }
+
+    /// <summary>
+    /// 是否完工
+    /// </summary>
+    public bool IsEnd { get; set; }
+
+    /// <summary>
+    /// 设备类型(工艺)
+    /// </summary>
+    public string DeviceTypes { get; set; }
+    
+    /// <summary>
+    /// 当前工艺是否完工
+    /// </summary>
+    public bool DeviceTypeIsEnd { get; set; }
     
     /// <summary>
     /// 计量单位

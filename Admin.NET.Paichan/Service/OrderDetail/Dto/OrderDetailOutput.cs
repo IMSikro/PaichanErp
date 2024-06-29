@@ -82,6 +82,11 @@ public class OrderDetailOutput
     public string OperatorUsers { get; set; }
 
     /// <summary>
+    /// 是否完工
+    /// </summary>
+    public bool IsEnd { get; set; }
+
+    /// <summary>
     /// 操作人员 描述
     /// </summary>
     public string OperatorUsersRealName { get; set; }
@@ -99,11 +104,16 @@ public class OrderDetailOutput
     /// <summary>
     /// 产品选择
     /// </summary>
-    public long ProduceId { get; set; }
+    public long? ProduceId { get; set; }
     /// <summary>
     /// 产品编号
     /// </summary>
     public string ProduceIdProduceName { get; set; }
+
+    /// <summary>
+    /// 产品编号
+    /// </summary>
+    public string ProduceCode { get; set; }
 
     /// <summary>
     /// 产品名称

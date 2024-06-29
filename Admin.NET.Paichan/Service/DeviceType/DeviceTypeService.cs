@@ -7,6 +7,7 @@ using Furion.FriendlyException;
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using Furion;
 
 namespace Admin.NET.Paichan;
 /// <summary>
@@ -66,6 +67,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                     ColorRgb = produceid.ColorRgb,
                     BatchNumber = u.BatchNumber,
                     Quantity = u.Quantity,
+                    IsEnd = u.IsEnd,
                     pUnit = u.pUnit,
                     Customer = u.Customer,
                     Remark = u.Remark,
@@ -75,41 +77,44 @@ public class DeviceTypeService : IDynamicApiController, ITransient
 
             foreach (var o in orders)
             {
-                var paiQty = await _rep.Context.Queryable<OrderDetail>()
+                var paiOrder = await _rep.Context.Queryable<OrderDetail>()
                     .Where(u => !u.IsDelete)
                     .Where(u => u.OrderId == o.Id)
                     .Where(u => u.DeviceTypeId == d.Id)
                     //处理外键和TreeSelector相关字段的连接
                     .LeftJoin<Order>((u, orderid) => u.OrderId == orderid.Id)
                     .LeftJoin<Produce>((u, orderid, produceid) => orderid.ProduceId == produceid.Id)
-                    .Where((u, orderid, produceid) => !orderid.IsDelete && !produceid.IsDelete)
-                    .SumAsync(u => u.Qty);
+                    .Where((u, orderid, produceid) => !orderid.IsDelete && !produceid.IsDelete).ToListAsync();
+
+                var paiQty = paiOrder.Sum(u => u.Qty);
+                var isEnd = paiOrder.Any(od => od.IsEnd);
                 o.OrderSurplusQuantity = o.Quantity - (paiQty ?? 0);
+                o.DeviceTypeIsEnd = isEnd;
             }
 
-            orders = orders.Where(o => o.OrderSurplusQuantity > 0).ToList();
+            orders = orders.Where(o => o.OrderSurplusQuantity > 0 && !o.DeviceTypeIsEnd).ToList();
             
             // 获取工艺未排产数量及批数
             d.UnOrderBatchNum = orders.Count;
             d.UnOrderNumber = orders.Sum(u => u.OrderSurplusQuantity > 0 ? u.OrderSurplusQuantity : 0) ?? 0;
 
-            var paiOrder = await _rep.Context.Queryable<OrderDetail>()
+            var paiOrder2 = await _rep.Context.Queryable<OrderDetail>()
                 .Where(u => !u.IsDelete)
                 .Where(u => u.DeviceTypeId == d.Id)
                 //处理外键和TreeSelector相关字段的连接
                 .LeftJoin<Order>((u, orderid) => u.OrderId == orderid.Id)
                 .Where((u, orderid) => !orderid.IsDelete)
                 .LeftJoin<Produce>((u, orderid, produceid) => orderid.ProduceId == produceid.Id)
-                .Where((u, orderid, produceid) => !produceid.IsDelete)
+                .Where((u, orderid, produceid) => !orderid.IsDelete && !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
-            d.OrderNumber = paiOrder.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
+            d.OrderBatchNum = paiOrder2.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderNumber = paiOrder2.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
-            paiOrder = paiOrder.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
+            paiOrder2 = paiOrder2.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
             // 获取工艺已完工数量及批数
-            d.EndOrderBatchNum = paiOrder.Select(u => u.OrderId).Distinct().Count();
-            d.EndOrderNumber = paiOrder.Sum(u => u.Qty) ?? 0;
+            d.EndOrderBatchNum = paiOrder2.Select(u => u.OrderId).Distinct().Count();
+            d.EndOrderNumber = paiOrder2.Sum(u => u.Qty) ?? 0;
         }
         return pageList;
     }
@@ -150,6 +155,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                     ColorRgb = produceid.ColorRgb,
                     BatchNumber = u.BatchNumber,
                     Quantity = u.Quantity,
+                    IsEnd = u.IsEnd,
                     pUnit = u.pUnit,
                     Customer = u.Customer,
                     Remark = u.Remark,
@@ -159,7 +165,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
 
             foreach (var o in orders)
             {
-                var paiQty = await _rep.Context.Queryable<OrderDetail>()
+                var paiOrder = await _rep.Context.Queryable<OrderDetail>()
                     .Where(u => !u.IsDelete)
                     .Where(u => u.OrderId == o.Id)
                     .Where(u => u.DeviceTypeId == d.Id)
@@ -168,8 +174,12 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                     .Where((u, orderid) => !orderid.IsDelete)
                     .LeftJoin<Produce>((u, orderid, produceid) => orderid.ProduceId == produceid.Id)
                     .Where((u, orderid, produceid) => !produceid.IsDelete)
-                    .SumAsync(u => u.Qty);
+                    .ToListAsync();
+
+                var paiQty = paiOrder.Sum(u => u.Qty);
+                var isEnd = paiOrder.Any(od => od.IsEnd);
                 o.OrderSurplusQuantity = o.Quantity - (paiQty ?? 0);
+                o.DeviceTypeIsEnd = isEnd;
             }
 
             orders = orders.Where(o => o.OrderSurplusQuantity > 0).ToList();
@@ -178,7 +188,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
             d.UnOrderBatchNum = orders.Count;
             d.UnOrderNumber = orders.Sum(u => u.OrderSurplusQuantity > 0 ? u.OrderSurplusQuantity : 0) ?? 0;
 
-            var paiOrder = await _rep.Context.Queryable<OrderDetail>()
+            var paiOrder2 = await _rep.Context.Queryable<OrderDetail>()
                 .Where(u => !u.IsDelete)
                 .Where(u => u.DeviceTypeId == d.Id)
                 //处理外键和TreeSelector相关字段的连接
@@ -188,58 +198,32 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 .Where((u, orderid, produceid) => !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
-            d.OrderNumber = paiOrder.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
+            d.OrderBatchNum = paiOrder2.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderNumber = paiOrder2.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
-            paiOrder = paiOrder.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
+            paiOrder2 = paiOrder2.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
             // 获取工艺已完工数量及批数
-            d.EndOrderBatchNum = paiOrder.Select(u => u.OrderId).Distinct().Count();
-            d.EndOrderNumber = paiOrder.Sum(u => u.Qty) ?? 0;
+            d.EndOrderBatchNum = paiOrder2.Select(u => u.OrderId).Distinct().Count();
+            d.EndOrderNumber = paiOrder2.Sum(u => u.Qty) ?? 0;
         }
 
         var sumorders = await _rep.Context.Queryable<Order>()
-            .Where(u => !u.IsDelete)
             //处理外键和TreeSelector相关字段的连接
             .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id)
-            .Where((u, produceid) => !produceid.IsDelete)
-            .Select((u, produceid) => new OrderOutput
-            {
-                Id = u.Id,
-                OrderCode = u.OrderCode,
-                OrderDate = u.OrderDate,
-                DeliveryDate = u.DeliveryDate,
-                StartDate = u.StartDate,
-                EndDate = u.EndDate,
-                ProduceId = u.ProduceId,
-                ProduceIdProduceName = produceid.ProduceCode,
-                ProduceName = u.ProduceName,
-                ColorRgb = produceid.ColorRgb,
-                BatchNumber = u.BatchNumber,
-                Quantity = u.Quantity,
-                pUnit = u.pUnit,
-                Customer = u.Customer,
-                Remark = u.Remark,
-                CreateUserName = u.CreateUserName,
-                UpdateUserName = u.UpdateUserName,
-            }).ToListAsync();
+            .Where((u, produceid) => !u.IsDelete && !u.IsEnd && !produceid.IsDelete)
+            .ToListAsync();
 
         foreach (var o in sumorders)
         {
-            var doneOrderDetail = await _rep.Context.Queryable<OrderDetail>()
-                .Where(u => !u.IsDelete)
-                .Where(u => u.OrderId == o.Id)
-                //处理外键和TreeSelector相关字段的连接
-                .LeftJoin<Order>((u, orderid) => u.OrderId == orderid.Id)
-                .Where((u, orderid) => !orderid.IsDelete)
-                .LeftJoin<Produce>((u, orderid, produceid) => orderid.ProduceId == produceid.Id)
-                .Where((u, orderid, produceid) => !produceid.IsDelete && u.EndDate != null).ToListAsync();
-            var doneQty = doneOrderDetail.Sum(u => u.Qty);
-            var avg = doneQty / doneOrderDetail.Select(u => u.DeviceTypeId).Distinct().Count();
-            
-            o.OrderSurplusQuantity = o.Quantity - (avg ?? 0);
+            if (!string.IsNullOrWhiteSpace(o.DeviceTypes))
+            {
+                var deviceTypes = await _rep.Context.Queryable<DeviceType>()
+                    .Where(dt => !dt.IsDelete && o.DeviceTypes.Contains(dt.Id.ToString())).Select(dt => dt.Id).ToListAsync();
+                o.DeviceTypes = deviceTypes.Any() ? string.Join(',', deviceTypes) : string.Empty;
+            }
         }
 
-        sumorders = sumorders.Where(o => o.OrderSurplusQuantity > 0).ToList();
+        sumorders = sumorders.Where(o => !string.IsNullOrWhiteSpace(o.DeviceTypes)).ToList();
 
         var data = new
         {
@@ -293,7 +277,26 @@ public class DeviceTypeService : IDynamicApiController, ITransient
     {
         var entity = await _rep.GetFirstAsync(u => u.Id == input.Id) ?? throw Oops.Oh(ErrorCodeEnum.D1002);
         await _rep.FakeDeleteAsync(entity);   //假删除
+        await App.GetService<ProduceService>().DeleteDeviceTypes([entity.Id]);
+        await App.GetService<OrderService>().DeleteDeviceTypes([entity.Id]);
         //await _rep.DeleteAsync(entity);   //真删除
+    }
+
+    /// <summary>
+    /// 清除已失效设备类型
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+    [ApiDescriptionSettings(Name = "ClearIsDelete")]
+    public async Task ClearIsDelete()
+    {
+        // 获取已删除工艺
+        var list = await _rep.AsQueryable().Where(u => u.IsDelete).Select(u => u.Id).ToListAsync();
+        if(list.Count > 0)
+        {
+            await App.GetService<ProduceService>().DeleteDeviceTypes(list);
+            await App.GetService<OrderService>().DeleteDeviceTypes(list);
+        }
     }
 
     /// <summary>

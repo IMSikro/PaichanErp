@@ -129,4 +129,15 @@ public class SysServerService : IDynamicApiController, ITransient
             new { fluentEmailAssembly.Name, fluentEmailAssembly.Version },
         };
     }
+
+
+    /// <summary>
+    /// 获取服务器当前Localhost
+    /// </summary>
+    /// <returns></returns>
+    [DisplayName("获取服务器当前Localhost")]
+    public dynamic GetServerLocalhost()
+    {
+        return CommonUtil.GetLocalhost();
+    }
 }

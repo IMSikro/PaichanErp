@@ -212,7 +212,8 @@ public class DeviceService : IDynamicApiController, ITransient
                 .Select(u => new
                 {
                     Label = u.TypeName,
-                    Value = u.Id
+                    Value = u.Id,
+                    u.NormalType
                 }
                 ).ToListAsync();
     }

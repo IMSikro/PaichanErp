@@ -5,18 +5,25 @@ using SqlSugar;
 namespace Admin.NET.Paichan.Entity;
 
 /// <summary>
-/// 设备类型
+/// 工艺设备
 /// </summary>
-[SugarTable("PC_DeviceType","设备类型")]
+[SugarTable("PC_DeviceType", "工艺设备")]
 [IncreTable]
 public class DeviceType  : EntityTenant
 {
     /// <summary>
-    /// 设备类型
+    /// 工艺名称
     /// </summary>
     [Required]
-    [SugarColumn(ColumnName = "TypeName", ColumnDescription = "设备类型", Length = 50)]
+    [SugarColumn(ColumnName = "TypeName", ColumnDescription = "工艺名称", Length = 50)]
     public string TypeName { get; set; }
+
+    /// <summary>
+    /// 是否默认工艺
+    /// </summary>
+    [Required]
+    [SugarColumn(ColumnName = "NormalType", ColumnDescription = "是否默认工艺",DefaultValue = "0")]
+    public bool NormalType { get; set; } = false;
 
     /// <summary>
     /// 排序
