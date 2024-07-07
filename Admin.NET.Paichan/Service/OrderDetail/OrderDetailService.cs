@@ -544,6 +544,7 @@ public class OrderDetailService : IDynamicApiController, ITransient
         }
 
         if (count >= produceDeviceTypeIds.Count) order.IsEnd = true;
+        await _rep.Context.Updateable(order).IgnoreColumns(ignoreAllNullColumns: true, ignoreAllDefaultValue: true).ExecuteCommandAsync();
     }
 
 
