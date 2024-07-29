@@ -49,6 +49,7 @@ public class OrderService : IDynamicApiController, ITransient
             )
             .WhereIF(!string.IsNullOrWhiteSpace(input.OrderCode), u => u.OrderCode.Contains(input.OrderCode.Trim()))
             .WhereIF(input.ProduceId > 0, u => u.ProduceId == input.ProduceId)
+            .WhereIF(input.OrderEndStatus != null, u => u.IsEnd == input.OrderEndStatus)
             .WhereIF(!string.IsNullOrWhiteSpace(input.ProduceName), u => u.ProduceName == input.ProduceName)
             .WhereIF(!string.IsNullOrWhiteSpace(input.pUnit), u => u.pUnit.Contains(input.pUnit.Trim()))
             .WhereIF(!string.IsNullOrWhiteSpace(input.Customer), u => u.Customer.Contains(input.Customer.Trim()))
@@ -343,9 +344,8 @@ public class OrderService : IDynamicApiController, ITransient
     }
 
     /// <summary>
-    /// 获取订单列表
+    /// 设置订单完工状态
     /// </summary>
-    /// <param name="input"></param>
     /// <returns></returns>
     [HttpGet]
     [ApiDescriptionSettings(Name = "SetOrderEndState")]

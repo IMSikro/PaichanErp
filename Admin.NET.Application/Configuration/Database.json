@@ -3,14 +3,14 @@
 
   // 详细数据库配置见SqlSugar官网（第一个为默认库）
   "DbConnection": {
-    "EnableConsoleSql": true, // 启用控制台打印SQL
+    "EnableConsoleSql": false, // 启用控制台打印SQL
     "ConnectionConfigs": [
         {
             //"ConfigId": "1300000000001", // 默认库标识-禁止修改
             "DbType": "SqlServer", // MySql、SqlServer、Sqlite、Oracle、PostgreSQL、Dm、Kdbndp、Oscar、MySqlConnector、Access、OpenGauss、QuestDB、HG、ClickHouse、GBase、Odbc、Custom
             //"ConnectionString": "DataSource=./Admin.NET.db", // 库连接字符串
             //"ConnectionString": "PORT=5432;DATABASE=paichan;HOST=sikro.tk;PASSWORD=post.gres#1993;USER ID=root;", // 库连接字符串
-            "ConnectionString": "Server=tcp.sikro.store,5433;Database=paichan;User=sa;Password=Sikro.1993;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True;", // 库连接字符串
+            "ConnectionString": "Server=tcp.sikro.store,9433;Database=paichan;User=sa;Password=Sikro.1993;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True;", // 库连接字符串
             "DbSettings": {
                 "EnableInitDb": false, // 启用库初始化
                 "EnableDiffLog": false, // 启用库表差异日志

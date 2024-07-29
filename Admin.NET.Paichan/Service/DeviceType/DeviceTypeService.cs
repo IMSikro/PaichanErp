@@ -108,7 +108,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 .Where((u, orderid, produceid) => !orderid.IsDelete && !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder2.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderBatchNum = paiOrder2.Count(u => u.EndDate == null);
             d.OrderNumber = paiOrder2.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
             paiOrder2 = paiOrder2.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();
@@ -182,7 +182,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 o.DeviceTypeIsEnd = isEnd;
             }
 
-            orders = orders.Where(o => o.OrderSurplusQuantity > 0).ToList();
+            orders = orders.Where(o => o.OrderSurplusQuantity > 0 && !o.DeviceTypeIsEnd).ToList();
 
             // 获取工艺未排产数量及批数
             d.UnOrderBatchNum = orders.Count;
@@ -198,7 +198,7 @@ public class DeviceTypeService : IDynamicApiController, ITransient
                 .Where((u, orderid, produceid) => !produceid.IsDelete)
                 .ToListAsync();
             // 获取工艺已排产数量及批数
-            d.OrderBatchNum = paiOrder2.Where(u => u.EndDate == null).Select(u => u.OrderId).Distinct().Count();
+            d.OrderBatchNum = paiOrder2.Count(u => u.EndDate == null);
             d.OrderNumber = paiOrder2.Where(u => u.EndDate == null).Sum(u => u.Qty) ?? 0;
 
             paiOrder2 = paiOrder2.Where(u => u.EndDate != null && u.EndDate.Value.Date == DateTime.Today).ToList();

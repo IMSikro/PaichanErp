@@ -114,6 +114,10 @@ namespace Admin.NET.Paichan;
          /// </summary>
          public List<DateTime?> DeliveryDateRange { get; set; } 
         /// <summary>
+        /// 完工状态
+        /// </summary>
+        public bool? OrderEndStatus { get; set; }
+        /// <summary>
         /// 产品选择
         /// </summary>
         public long? ProduceId { get; set; }

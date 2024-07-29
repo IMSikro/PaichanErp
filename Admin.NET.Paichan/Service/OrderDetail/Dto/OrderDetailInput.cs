@@ -1,4 +1,5 @@
 ﻿using Admin.NET.Core;
+using Furion.DataValidation;
 using SqlSugar;
 using System.ComponentModel.DataAnnotations;
 
@@ -195,6 +196,18 @@ public class AddOrderDetailInput : OrderDetailBaseInput
 /// </summary>
 public class DeleteOrderDetailInput : BaseIdInput
 {
+}
+
+/// <summary>
+/// 订单排产批量删除输入参数
+/// </summary>
+public class BatchDeleteOrderDetailInput
+{
+    /// <summary>
+    /// 排产Id
+    /// </summary>
+    [Required(ErrorMessage = "排产Id不能为空")]
+    public List<long> Ids { get; set; } = [];
 }
 
 /// <summary>

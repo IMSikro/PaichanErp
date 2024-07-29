@@ -404,6 +404,30 @@ public class OrderDetailService : IDynamicApiController, ITransient
     }
 
     /// <summary>
+    /// 批量删除订单排产
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    [ApiDescriptionSettings(Name = "BatchDelete")]
+    public async Task BatchDelete(BatchDeleteOrderDetailInput input)
+    {
+
+        if (input.Ids.Count == 0) throw Oops.Oh("传参有误,请检查!");
+        if (input.Ids.Any(i => i <= 0L)) throw Oops.Oh("传参有误,请检查!");
+        //var result = await _rep.AsUpdateable()
+        //    .SetColumns(it => new OrderDetail { Sort = it.Sort + 999 })
+        //    .Where(u => input.Ids.Contains(u.Id)).ExecuteCommandAsync();
+
+        //_rep.FakeDeleteAsync()
+        //return result;
+        var entity = await _rep.AsQueryable().Where(u => !u.IsDelete && input.Ids.Contains(u.Id)).ToListAsync();
+        if(entity == null || entity.Count == 0) throw Oops.Oh(ErrorCodeEnum.D1002);
+        await _rep.FakeDeleteAsync(entity);   //假删除
+        //await _rep.DeleteAsync(entity);   //真删除
+    }
+
+    /// <summary>
     /// 更新订单排产
     /// </summary>
     /// <param name="input"></param>
@@ -464,6 +488,9 @@ public class OrderDetailService : IDynamicApiController, ITransient
                 Sort = entity.Sort,
                 DeviceId = entity.DeviceId,
                 DeviceTypeId = entity.DeviceTypeId,
+                ProduceId = entity.ProduceId,
+                ProduceCode = entity.ProduceCode,
+                ProduceName = entity.ProduceName,
                 OperatorUsers = entity.OperatorUsers,
                 Remark = entity.Remark,
             };
@@ -661,7 +688,8 @@ public class OrderDetailService : IDynamicApiController, ITransient
     public async Task<dynamic> SysUserOperatorUsersDropdown()
     {
         return await _rep.Context.Queryable<SysUser>()
-            .Where(u => !u.IsDelete)
+            .Includes(u => u.SysPos)
+            .Where(u => !u.IsDelete && u.SysPos.IsWorker == true)
             .Select(u => new
             {
                 Label = u.RealName,

@@ -11,9 +11,9 @@ namespace Admin.NET.Paichan.Entity;
 [IncreTable]
 public class Order : EntityTenant
 {
-    
+
     /// <summary>
-    /// 产品编号
+    /// 订单编号
     /// </summary>
     [Required]
     [SugarColumn(ColumnName = "OrderCode", ColumnDescription = "订单编号", Length = 100)]
@@ -60,14 +60,14 @@ public class Order : EntityTenant
     /// <summary>
     /// 产品编号
     /// </summary>
-    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号",Length = 50)]
+    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号",Length = 100)]
     public string? ProduceCode { get; set; }
 
     /// <summary>
     /// 产品名称
     /// </summary>
     [Required]
-    [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称",Length = 50)]
+    [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称",Length = 100)]
     public string ProduceName { get; set; }
 
     /// <summary>

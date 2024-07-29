@@ -86,13 +86,13 @@ public class OrderDetail : EntityTenant
     /// <summary>
     /// 产品编号
     /// </summary>
-    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号", Length = 50)]
+    [SugarColumn(ColumnName = "ProduceCode", ColumnDescription = "产品编号", Length = 100)]
     public string? ProduceCode { get; set; }
 
     /// <summary>
     /// 产品名称
     /// </summary>
-    [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称", Length = 50)]
+    [SugarColumn(ColumnName = "ProduceName", ColumnDescription = "产品名称", Length = 100)]
     public string? ProduceName { get; set; }
 
     /// <summary>

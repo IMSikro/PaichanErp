@@ -14,6 +14,7 @@ namespace Admin.NET.Core;
 /// </summary>
 [SugarTable(null, "系统职位表")]
 [SysTable]
+[IncreTable]
 public class SysPos : EntityTenant
 {
     /// <summary>
@@ -29,6 +30,12 @@ public class SysPos : EntityTenant
     [SugarColumn(ColumnDescription = "编码", Length = 64)]
     [MaxLength(64)]
     public string? Code { get; set; }
+
+    /// <summary>
+    /// 是否车间作业员
+    /// </summary>
+    [SugarColumn(ColumnDescription = "是否车间作业员")]
+    public bool? IsWorker { get; set; } = false;
 
     /// <summary>
     /// 排序
