@@ -11,6 +11,19 @@ namespace Admin.NET.Paichan.Entity;
 [IncreTable]
 public class ProcessStandard  : EntityTenant
 {
+
+    /// <summary>
+    /// 配方
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceFormulaId", ColumnDescription = "配方")]
+    public long? ProduceFormulaId { get; set; }
+
+    /// <summary>
+    /// 配方
+    /// </summary>
+    [Navigate(NavigateType.OneToOne, nameof(ProduceFormulaId))]
+    public ProduceFormula? ProduceFormula { get; set; }
+
     /// <summary>
     /// 工艺标准编号
     /// </summary>

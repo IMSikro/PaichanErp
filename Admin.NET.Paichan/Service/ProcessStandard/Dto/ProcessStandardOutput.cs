@@ -11,6 +11,16 @@ public class ProcessStandardOutput
     public long Id { get; set; }
     
     /// <summary>
+    /// 配方
+    /// </summary>
+    public long? ProduceFormulaId { get; set; } 
+    
+    /// <summary>
+    /// 配方 描述
+    /// </summary>
+    public string ProduceFormulaIdProduceFormulaCode { get; set; } 
+    
+    /// <summary>
     /// 工艺标准编号
     /// </summary>
     public string ProcessStandardCode { get; set; }
@@ -63,7 +73,7 @@ public class ProcessStandardOutput
     /// <summary>
     /// 工艺项目 描述
     /// </summary>
-    public string ProcessProjectIdProcessProjectCode { get; set; } 
+    public string ProcessProjectIdProcessProjectName { get; set; } 
     
     /// <summary>
     /// 工艺项目编号

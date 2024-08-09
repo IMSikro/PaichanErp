@@ -9,6 +9,11 @@ namespace Admin.NET.Paichan;
     public class ExamineStandardBaseInput
     {
         /// <summary>
+        /// 配方
+        /// </summary>
+        public virtual long? ProduceFormulaId { get; set; }
+        
+        /// <summary>
         /// 检验标准编号
         /// </summary>
         public virtual string ExamineStandardCode { get; set; }
@@ -101,6 +106,11 @@ namespace Admin.NET.Paichan;
         public string? SearchKey { get; set; }
 
         /// <summary>
+        /// 配方
+        /// </summary>
+        public long? ProduceFormulaId { get; set; }
+        
+        /// <summary>
         /// 检验标准编号
         /// </summary>
         public string? ExamineStandardCode { get; set; }
@@ -132,6 +142,12 @@ namespace Admin.NET.Paichan;
     /// </summary>
     public class AddExamineStandardInput : ExamineStandardBaseInput
     {
+        /// <summary>
+        /// 配方
+        /// </summary>
+        [Required(ErrorMessage = "配方不能为空")]
+        public override long? ProduceFormulaId { get; set; }
+        
         /// <summary>
         /// 检验标准编号
         /// </summary>

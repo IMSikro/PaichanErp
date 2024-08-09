@@ -11,6 +11,19 @@ namespace Admin.NET.Paichan.Entity;
 [IncreTable]
 public class ExamineStandard  : EntityTenant
 {
+
+    /// <summary>
+    /// 配方
+    /// </summary>
+    [SugarColumn(ColumnName = "ProduceFormulaId", ColumnDescription = "配方")]
+    public long? ProduceFormulaId { get; set; }
+
+    /// <summary>
+    /// 配方
+    /// </summary>
+    [Navigate(NavigateType.OneToOne, nameof(ProduceFormulaId))]
+    public ProduceFormula? ProduceFormula { get; set; }
+
     /// <summary>
     /// 检验标准编号
     /// </summary>

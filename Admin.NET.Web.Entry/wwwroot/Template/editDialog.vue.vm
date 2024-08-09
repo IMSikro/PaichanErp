@@ -15,7 +15,7 @@
 					@foreach (var column in Model.TableField){
 					if(@column.ColumnKey == "True"){
 					@:<el-form-item v-show="false">
-						<el-input v-model="ruleForm.@(@column.LowerPropertyName)" />
+						<el-input v-model="ruleForm.@(@column.LowerPropertyName)" v-show="false" />
 					</el-form-item>
 					}else{
 					if (@column.WhetherAddUpdate == "Y"){

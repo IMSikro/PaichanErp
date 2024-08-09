@@ -6,6 +6,11 @@
     public class ExamineStandardDto
     {
         /// <summary>
+        /// 配方
+        /// </summary>
+        public string ProduceFormulaIdProduceFormulaCode { get; set; }
+        
+        /// <summary>
         /// 产品
         /// </summary>
         public string ProduceIdProduceCode { get; set; }
@@ -18,12 +23,17 @@
         /// <summary>
         /// 检验项目
         /// </summary>
-        public string ExamineProjectIdExamineProjectCode { get; set; }
+        public string ExamineProjectIdExamineProjectName { get; set; }
         
         /// <summary>
         /// 主键Id
         /// </summary>
         public long Id { get; set; }
+        
+        /// <summary>
+        /// 配方
+        /// </summary>
+        public long? ProduceFormulaId { get; set; }
         
         /// <summary>
         /// 检验标准编号

@@ -34,17 +34,21 @@ public class ExamineStandardService : IDynamicApiController, ITransient
                 u.ExamineStandardCode.Contains(input.SearchKey.Trim())
                 || u.ExamineStandardName.Contains(input.SearchKey.Trim())
             )
+            .WhereIF(input.ProduceFormulaId>0, u => u.ProduceFormulaId == input.ProduceFormulaId)
             .WhereIF(!string.IsNullOrWhiteSpace(input.ExamineStandardCode), u => u.ExamineStandardCode.Contains(input.ExamineStandardCode.Trim()))
             .WhereIF(!string.IsNullOrWhiteSpace(input.ExamineStandardName), u => u.ExamineStandardName.Contains(input.ExamineStandardName.Trim()))
             .WhereIF(input.ProduceId>0, u => u.ProduceId == input.ProduceId)
             .WhereIF(input.DeviceTypeId>0, u => u.DeviceTypeId == input.DeviceTypeId)
             .WhereIF(input.ExamineProjectId>0, u => u.ExamineProjectId == input.ExamineProjectId)
             //处理外键和TreeSelector相关字段的连接
-            .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id )
-            .LeftJoin<DeviceType>((u, produceid, devicetypeid) => u.DeviceTypeId == devicetypeid.Id )
-            .LeftJoin<ExamineProject>((u, produceid, devicetypeid, examineprojectid) => u.ExamineProjectId == examineprojectid.Id )
-            .Select((u, produceid, devicetypeid, examineprojectid)=> new ExamineStandardOutput{
+            .LeftJoin<ProduceFormula>((u, produceformulaid) => u.ProduceFormulaId == produceformulaid.Id )
+            .LeftJoin<Produce>((u, produceformulaid, produceid) => u.ProduceId == produceid.Id )
+            .LeftJoin<DeviceType>((u, produceformulaid, produceid, devicetypeid) => u.DeviceTypeId == devicetypeid.Id )
+            .LeftJoin<ExamineProject>((u, produceformulaid, produceid, devicetypeid, examineprojectid) => u.ExamineProjectId == examineprojectid.Id )
+            .Select((u, produceformulaid, produceid, devicetypeid, examineprojectid)=> new ExamineStandardOutput{
                 Id = u.Id, 
+                ProduceFormulaId = u.ProduceFormulaId, 
+                ProduceFormulaIdProduceFormulaCode = produceformulaid.ProduceFormulaCode,
                 ExamineStandardCode = u.ExamineStandardCode, 
                 ExamineStandardName = u.ExamineStandardName, 
                 ProduceId = u.ProduceId, 
@@ -55,7 +59,7 @@ public class ExamineStandardService : IDynamicApiController, ITransient
                 DeviceTypeIdTypeName = devicetypeid.TypeName,
                 DeviceTypeName = u.DeviceTypeName, 
                 ExamineProjectId = u.ExamineProjectId, 
-                ExamineProjectIdExamineProjectCode = examineprojectid.ExamineProjectCode,
+                ExamineProjectIdExamineProjectName = examineprojectid.ExamineProjectName,
                 ExamineProjectCode = u.ExamineProjectCode, 
                 ExamineProjectName = u.ExamineProjectName, 
                 StandardValue = u.StandardValue, 
@@ -66,7 +70,7 @@ public class ExamineStandardService : IDynamicApiController, ITransient
                 UpdateUserName = u.UpdateUserName, 
             })
 ;
-        query = query.OrderBuilder(input, "u.", "CreateTime");
+        query = query.OrderBuilder(input, "", "CreateTime");
         return await query.ToPagedListAsync(input.Page, input.PageSize);
     }
 
@@ -80,14 +84,6 @@ public class ExamineStandardService : IDynamicApiController, ITransient
     public async Task Add(AddExamineStandardInput input)
     {
         var entity = input.Adapt<ExamineStandard>();
-        var project = await _rep.Context.Queryable<ExamineProject>().FirstAsync(wa => wa.Id == input.ExamineProjectId);
-        entity.ExamineProjectCode = project.ExamineProjectCode;
-        entity.ExamineProjectName = project.ExamineProjectName;
-        var produce = await _rep.Context.Queryable<Produce>().FirstAsync(wa => wa.Id == input.ProduceId);
-        entity.ProduceCode = produce.ProduceCode;
-        entity.ProduceName = produce.ProduceName;
-        var deviceType = await _rep.Context.Queryable<DeviceType>().FirstAsync(wa => wa.Id == input.DeviceTypeId);
-        entity.DeviceTypeName = deviceType.TypeName;
         await _rep.InsertAsync(entity);
     }
 
@@ -115,14 +111,6 @@ public class ExamineStandardService : IDynamicApiController, ITransient
     public async Task Update(UpdateExamineStandardInput input)
     {
         var entity = input.Adapt<ExamineStandard>();
-        var project = await _rep.Context.Queryable<ExamineProject>().FirstAsync(wa => wa.Id == input.ExamineProjectId);
-        entity.ExamineProjectCode = project.ExamineProjectCode;
-        entity.ExamineProjectName = project.ExamineProjectName;
-        var produce = await _rep.Context.Queryable<Produce>().FirstAsync(wa => wa.Id == input.ProduceId);
-        entity.ProduceCode = produce.ProduceCode;
-        entity.ProduceName = produce.ProduceName;
-        var deviceType = await _rep.Context.Queryable<DeviceType>().FirstAsync(wa => wa.Id == input.DeviceTypeId);
-        entity.DeviceTypeName = deviceType.TypeName;
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true).ExecuteCommandAsync();
     }
 
@@ -150,6 +138,22 @@ public class ExamineStandardService : IDynamicApiController, ITransient
         return await _rep.AsQueryable().Select<ExamineStandardOutput>().ToListAsync();
     }
 
+    /// <summary>
+    /// 获取配方列表
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [ApiDescriptionSettings(Name = "ProduceFormulaProduceFormulaIdDropdown"), HttpGet]
+    public async Task<dynamic> ProduceFormulaProduceFormulaIdDropdown()
+    {
+        return await _rep.Context.Queryable<ProduceFormula>()
+                .Select(u => new
+                {
+                    Label = u.ProduceFormulaCode,
+                    Value = u.Id
+                }
+                ).ToListAsync();
+    }
     /// <summary>
     /// 获取产品列表
     /// </summary>

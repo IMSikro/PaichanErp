@@ -30,21 +30,19 @@ public class ProcessStandardService : IDynamicApiController, ITransient
     public async Task<SqlSugarPagedList<ProcessStandardOutput>> Page(ProcessStandardInput input)
     {
         var query= _rep.AsQueryable()
-            .WhereIF(!string.IsNullOrWhiteSpace(input.SearchKey), u =>
-                u.ProcessStandardCode.Contains(input.SearchKey.Trim())
-                || u.ProcessStandardName.Contains(input.SearchKey.Trim())
-            )
-            .WhereIF(!string.IsNullOrWhiteSpace(input.ProcessStandardCode), u => u.ProcessStandardCode.Contains(input.ProcessStandardCode.Trim()))
-            .WhereIF(!string.IsNullOrWhiteSpace(input.ProcessStandardName), u => u.ProcessStandardName.Contains(input.ProcessStandardName.Trim()))
+            .WhereIF(input.ProduceFormulaId>0, u => u.ProduceFormulaId == input.ProduceFormulaId)
             .WhereIF(input.ProduceId>0, u => u.ProduceId == input.ProduceId)
             .WhereIF(input.DeviceTypeId>0, u => u.DeviceTypeId == input.DeviceTypeId)
             .WhereIF(input.ProcessProjectId>0, u => u.ProcessProjectId == input.ProcessProjectId)
             //处理外键和TreeSelector相关字段的连接
-            .LeftJoin<Produce>((u, produceid) => u.ProduceId == produceid.Id )
-            .LeftJoin<DeviceType>((u, produceid, devicetypeid) => u.DeviceTypeId == devicetypeid.Id )
-            .LeftJoin<ProcessProject>((u, produceid, devicetypeid, processprojectid) => u.ProcessProjectId == processprojectid.Id )
-            .Select((u, produceid, devicetypeid, processprojectid)=> new ProcessStandardOutput{
+            .LeftJoin<ProduceFormula>((u, produceformulaid) => u.ProduceFormulaId == produceformulaid.Id )
+            .LeftJoin<Produce>((u, produceformulaid, produceid) => u.ProduceId == produceid.Id )
+            .LeftJoin<DeviceType>((u, produceformulaid, produceid, devicetypeid) => u.DeviceTypeId == devicetypeid.Id )
+            .LeftJoin<ProcessProject>((u, produceformulaid, produceid, devicetypeid, processprojectid) => u.ProcessProjectId == processprojectid.Id )
+            .Select((u, produceformulaid, produceid, devicetypeid, processprojectid)=> new ProcessStandardOutput{
                 Id = u.Id, 
+                ProduceFormulaId = u.ProduceFormulaId, 
+                ProduceFormulaIdProduceFormulaCode = produceformulaid.ProduceFormulaCode,
                 ProcessStandardCode = u.ProcessStandardCode, 
                 ProcessStandardName = u.ProcessStandardName, 
                 ProduceId = u.ProduceId, 
@@ -55,7 +53,7 @@ public class ProcessStandardService : IDynamicApiController, ITransient
                 DeviceTypeIdTypeName = devicetypeid.TypeName,
                 DeviceTypeName = u.DeviceTypeName, 
                 ProcessProjectId = u.ProcessProjectId, 
-                ProcessProjectIdProcessProjectCode = processprojectid.ProcessProjectCode,
+                ProcessProjectIdProcessProjectName = processprojectid.ProcessProjectName,
                 ProcessProjectCode = u.ProcessProjectCode, 
                 ProcessProjectName = u.ProcessProjectName, 
                 StandardValue = u.StandardValue, 
@@ -66,7 +64,7 @@ public class ProcessStandardService : IDynamicApiController, ITransient
                 UpdateUserName = u.UpdateUserName, 
             })
 ;
-        query = query.OrderBuilder(input, "u.", "CreateTime");
+        query = query.OrderBuilder(input, "", "CreateTime");
         return await query.ToPagedListAsync(input.Page, input.PageSize);
     }
 
@@ -80,14 +78,6 @@ public class ProcessStandardService : IDynamicApiController, ITransient
     public async Task Add(AddProcessStandardInput input)
     {
         var entity = input.Adapt<ProcessStandard>();
-        var project = await _rep.Context.Queryable<ProcessProject>().FirstAsync(wa => wa.Id == input.ProcessProjectId);
-        entity.ProcessProjectCode = project.ProcessProjectCode;
-        entity.ProcessProjectName = project.ProcessProjectName;
-        var produce = await _rep.Context.Queryable<Produce>().FirstAsync(wa => wa.Id == input.ProduceId);
-        entity.ProduceCode = produce.ProduceCode;
-        entity.ProduceName = produce.ProduceName;
-        var deviceType = await _rep.Context.Queryable<DeviceType>().FirstAsync(wa => wa.Id == input.DeviceTypeId);
-        entity.DeviceTypeName = deviceType.TypeName;
         await _rep.InsertAsync(entity);
     }
 
@@ -115,14 +105,6 @@ public class ProcessStandardService : IDynamicApiController, ITransient
     public async Task Update(UpdateProcessStandardInput input)
     {
         var entity = input.Adapt<ProcessStandard>();
-        var project = await _rep.Context.Queryable<ProcessProject>().FirstAsync(wa => wa.Id == input.ProcessProjectId);
-        entity.ProcessProjectCode = project.ProcessProjectCode;
-        entity.ProcessProjectName = project.ProcessProjectName;
-        var produce = await _rep.Context.Queryable<Produce>().FirstAsync(wa => wa.Id == input.ProduceId);
-        entity.ProduceCode = produce.ProduceCode;
-        entity.ProduceName = produce.ProduceName;
-        var deviceType = await _rep.Context.Queryable<DeviceType>().FirstAsync(wa => wa.Id == input.DeviceTypeId);
-        entity.DeviceTypeName = deviceType.TypeName;
         await _rep.AsUpdateable(entity).IgnoreColumns(ignoreAllNullColumns: true).ExecuteCommandAsync();
     }
 
@@ -150,6 +132,22 @@ public class ProcessStandardService : IDynamicApiController, ITransient
         return await _rep.AsQueryable().Select<ProcessStandardOutput>().ToListAsync();
     }
 
+    /// <summary>
+    /// 获取配方列表
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [ApiDescriptionSettings(Name = "ProduceFormulaProduceFormulaIdDropdown"), HttpGet]
+    public async Task<dynamic> ProduceFormulaProduceFormulaIdDropdown()
+    {
+        return await _rep.Context.Queryable<ProduceFormula>()
+                .Select(u => new
+                {
+                    Label = u.ProduceFormulaCode,
+                    Value = u.Id
+                }
+                ).ToListAsync();
+    }
     /// <summary>
     /// 获取产品列表
     /// </summary>

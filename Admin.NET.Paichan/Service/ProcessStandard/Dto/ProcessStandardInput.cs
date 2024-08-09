@@ -9,6 +9,11 @@ namespace Admin.NET.Paichan;
     public class ProcessStandardBaseInput
     {
         /// <summary>
+        /// 配方
+        /// </summary>
+        public virtual long? ProduceFormulaId { get; set; }
+        
+        /// <summary>
         /// 工艺标准编号
         /// </summary>
         public virtual string ProcessStandardCode { get; set; }
@@ -101,14 +106,9 @@ namespace Admin.NET.Paichan;
         public string? SearchKey { get; set; }
 
         /// <summary>
-        /// 工艺标准编号
+        /// 配方
         /// </summary>
-        public string? ProcessStandardCode { get; set; }
-        
-        /// <summary>
-        /// 工艺标准名称
-        /// </summary>
-        public string? ProcessStandardName { get; set; }
+        public long? ProduceFormulaId { get; set; }
         
         /// <summary>
         /// 产品

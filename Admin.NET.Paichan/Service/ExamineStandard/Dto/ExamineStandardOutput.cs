@@ -11,6 +11,16 @@ public class ExamineStandardOutput
     public long Id { get; set; }
     
     /// <summary>
+    /// 配方
+    /// </summary>
+    public long? ProduceFormulaId { get; set; } 
+    
+    /// <summary>
+    /// 配方 描述
+    /// </summary>
+    public string ProduceFormulaIdProduceFormulaCode { get; set; } 
+    
+    /// <summary>
     /// 检验标准编号
     /// </summary>
     public string ExamineStandardCode { get; set; }
@@ -48,7 +58,7 @@ public class ExamineStandardOutput
     /// <summary>
     /// 工艺设备 描述
     /// </summary>
-    public string DeviceTypeIdTypeName { get; set; }
+    public string DeviceTypeIdTypeName { get; set; } 
     
     /// <summary>
     /// 工艺设备名称
@@ -63,7 +73,7 @@ public class ExamineStandardOutput
     /// <summary>
     /// 检验项目 描述
     /// </summary>
-    public string ExamineProjectIdExamineProjectCode { get; set; } 
+    public string ExamineProjectIdExamineProjectName { get; set; } 
     
     /// <summary>
     /// 检验项目编号

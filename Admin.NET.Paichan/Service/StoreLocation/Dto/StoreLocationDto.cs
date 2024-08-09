@@ -1,58 +1,27 @@
-﻿namespace Admin.NET.Paichan;
+﻿using Magicodes.ExporterAndImporter.Core;
+using Magicodes.ExporterAndImporter.Excel;
+using System.ComponentModel.DataAnnotations;
+
+namespace Admin.NET.Paichan;
+
+/// <summary>
+/// 库位管理输出参数
+/// </summary>
+
+[ExcelImporter(IsLabelingError = true)]
+public class StoreLocationDto
+{
+    /// <summary>
+    /// 库位
+    /// </summary>
+    [ImporterHeader(Name = "库位")]
+    [Required(ErrorMessage = "库位不能为空")]
+    public string StoreLocationCode { get; set; }
 
     /// <summary>
-    /// 库位管理输出参数
+    /// 备注
     /// </summary>
-    public class StoreLocationDto
-    {
-        /// <summary>
-        /// 主键Id
-        /// </summary>
-        public long Id { get; set; }
-        
-        /// <summary>
-        /// 库位编号
-        /// </summary>
-        public string StoreLocationCode { get; set; }
-        
-        /// <summary>
-        /// 库位名称
-        /// </summary>
-        public string StoreLocationName { get; set; }
-        
-        /// <summary>
-        /// 仓库外键
-        /// </summary>
-        public long StoreId { get; set; }
-        
-        /// <summary>
-        /// 仓库编号
-        /// </summary>
-        public string StoreCode { get; set; }
-        
-        /// <summary>
-        /// 仓库名称
-        /// </summary>
-        public string StoreName { get; set; }
-        
-        /// <summary>
-        /// 排序
-        /// </summary>
-        public int? Sort { get; set; }
-        
-        /// <summary>
-        /// 备注
-        /// </summary>
-        public string? Remark { get; set; }
-        
-        /// <summary>
-        /// 创建者姓名
-        /// </summary>
-        public string? CreateUserName { get; set; }
-        
-        /// <summary>
-        /// 修改者姓名
-        /// </summary>
-        public string? UpdateUserName { get; set; }
-        
-    }
+    [ImporterHeader(Name = "备注")]
+    public string? Remark { get; set; }
+
+}
